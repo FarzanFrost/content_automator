@@ -53,9 +53,7 @@ class AutomationService:
         """
         # 1. Download audio via GoogleDriveRepo and extract filename
         downloaded_path = Path(
-            self._gdrive_repo.download_audio(
-                drive_link, str(self._file_repo._base_dir)
-            )
+            self._gdrive_repo.download_audio(drive_link, str(self._file_repo._base_dir))
         )
         filename = downloaded_path.name
 

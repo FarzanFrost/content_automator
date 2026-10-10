@@ -54,7 +54,9 @@ class TestPromptManager(unittest.TestCase):
 
     def test_concept_prompt_appends_theme_when_provided(self) -> None:
         theme = "Ramadan special"
-        prompt = self.manager.get_concept_prompt(summary="Fasting virtues.", theme=theme)
+        prompt = self.manager.get_concept_prompt(
+            summary="Fasting virtues.", theme=theme
+        )
         self.assertIn(theme, prompt)
 
     def test_concept_prompt_no_theme_omits_theme_section(self) -> None:

@@ -51,14 +51,22 @@ class FFmpegWrapper:
         Path(out_path).parent.mkdir(parents=True, exist_ok=True)
         await self._run(
             "-y",
-            "-loop", "1",
-            "-i", img_path,
-            "-i", audio_path,
-            "-c:v", "libx264",
-            "-tune", "stillimage",
-            "-c:a", "aac",
-            "-b:a", "192k",
-            "-pix_fmt", "yuv420p",
+            "-loop",
+            "1",
+            "-i",
+            img_path,
+            "-i",
+            audio_path,
+            "-c:v",
+            "libx264",
+            "-tune",
+            "stillimage",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            "-pix_fmt",
+            "yuv420p",
             "-shortest",
             out_path,
         )
@@ -90,26 +98,37 @@ class FFmpegWrapper:
 
         await self._run(
             "-y",
-            "-loop", "1",
-            "-i", img_path,
-            "-stream_loop", "-1",
-            "-i", bgm_path,
-            "-filter_complex", vf_filter,
-            "-map", "[out]",
-            "-map", "1:a",
-            "-c:v", "libx264",
-            "-tune", "stillimage",
-            "-c:a", "aac",
-            "-b:a", "192k",
-            "-pix_fmt", "yuv420p",
-            "-t", "60",
+            "-loop",
+            "1",
+            "-i",
+            img_path,
+            "-stream_loop",
+            "-1",
+            "-i",
+            bgm_path,
+            "-filter_complex",
+            vf_filter,
+            "-map",
+            "[out]",
+            "-map",
+            "1:a",
+            "-c:v",
+            "libx264",
+            "-tune",
+            "stillimage",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            "-pix_fmt",
+            "yuv420p",
+            "-t",
+            "60",
             "-shortest",
             out_path,
         )
 
-    async def create_short_thumbnail(
-        self, img_path: str, out_path: str
-    ) -> None:
+    async def create_short_thumbnail(self, img_path: str, out_path: str) -> None:
         """Produce a 9:16 thumbnail from a 16:9 source using blur-background scaling.
 
         Scales the source image to fill a 1080x1920 canvas, blurs it as the
@@ -130,9 +149,13 @@ class FFmpegWrapper:
 
         await self._run(
             "-y",
-            "-i", img_path,
-            "-filter_complex", vf_filter,
-            "-map", "[out]",
-            "-frames:v", "1",
+            "-i",
+            img_path,
+            "-filter_complex",
+            vf_filter,
+            "-map",
+            "[out]",
+            "-frames:v",
+            "1",
             out_path,
         )

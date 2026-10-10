@@ -21,13 +21,17 @@ class TestAutomationService(unittest.IsolatedAsyncioTestCase):
 
         self.file_repo = MagicMock()
         self.file_repo._base_dir = self.tmp_path / "base"
-        self.file_repo.create_project_env.return_value = str(self.tmp_path / "khutbah_1")
+        self.file_repo.create_project_env.return_value = str(
+            self.tmp_path / "khutbah_1"
+        )
         self.file_repo.save_text_version.return_value = str(
             self.tmp_path / "khutbah_1" / "v1_auto.md"
         )
 
         self.gdrive_repo = MagicMock()
-        self.gdrive_repo.download_audio.return_value = str(self.tmp_path / "khutbah_1.mp3")
+        self.gdrive_repo.download_audio.return_value = str(
+            self.tmp_path / "khutbah_1.mp3"
+        )
 
         self.notebooklm_repo = MagicMock()
         self.notebooklm_repo.generate_summary = AsyncMock(
@@ -38,9 +42,7 @@ class TestAutomationService(unittest.IsolatedAsyncioTestCase):
         )
 
         self.gemini_repo = MagicMock()
-        self.gemini_repo.generate_image = AsyncMock(
-            side_effect=lambda prompt, out: out
-        )
+        self.gemini_repo.generate_image = AsyncMock(side_effect=lambda prompt, out: out)
 
         def mock_concepts(prompt, image_path):
             concept = ThumbnailConcept(
@@ -57,7 +59,9 @@ class TestAutomationService(unittest.IsolatedAsyncioTestCase):
         )
 
         self.prompt_manager = MagicMock()
-        self.prompt_manager.get_infographic_prompt.return_value = "Infographic prompt text"
+        self.prompt_manager.get_infographic_prompt.return_value = (
+            "Infographic prompt text"
+        )
         self.prompt_manager.get_concept_prompt.return_value = "Concept prompt text"
         self.prompt_manager.get_thumbnail_prompt.return_value = "Thumbnail prompt text"
 
@@ -111,12 +115,8 @@ class TestAutomationService(unittest.IsolatedAsyncioTestCase):
         )
 
         # Verify NotebookLM concurrency
-        self.notebooklm_repo.generate_summary.assert_called_once_with(
-            state.audio_path
-        )
-        self.notebooklm_repo.generate_hashtags.assert_called_once_with(
-            state.audio_path
-        )
+        self.notebooklm_repo.generate_summary.assert_called_once_with(state.audio_path)
+        self.notebooklm_repo.generate_hashtags.assert_called_once_with(state.audio_path)
 
         # Verify Infographics early execution placeholders and background tasks
         self.assertEqual(len(placeholders), 3)
@@ -182,9 +182,7 @@ class TestAutomationService(unittest.IsolatedAsyncioTestCase):
         assets = await service.phase_2_process(state)
 
         # Concept Math: k=2 -> k+1 = 3 calls to generate_structured_concepts
-        self.assertEqual(
-            self.gemini_repo.generate_structured_concepts.call_count, 3
-        )
+        self.assertEqual(self.gemini_repo.generate_structured_concepts.call_count, 3)
 
         # Flattened concepts: 3 * (k + 1) = 9
         # Image Math: 9 thumbnails generated
@@ -192,10 +190,14 @@ class TestAutomationService(unittest.IsolatedAsyncioTestCase):
 
         # Video Math: FFmpegWrapper called with selected infographic
         self.ffmpeg_wrapper.create_final_video.assert_called_once_with(
-            infographic_path, audio_path, str((project_dir / "final_video.mp4").resolve())
+            infographic_path,
+            audio_path,
+            str((project_dir / "final_video.mp4").resolve()),
         )
         self.ffmpeg_wrapper.create_short_video.assert_called_once_with(
-            infographic_path, bgm_path, str((project_dir / "shorts_video.mp4").resolve())
+            infographic_path,
+            bgm_path,
+            str((project_dir / "shorts_video.mp4").resolve()),
         )
         self.ffmpeg_wrapper.create_short_thumbnail.assert_called_once_with(
             infographic_path, str((project_dir / "shorts_thumbnail.png").resolve())

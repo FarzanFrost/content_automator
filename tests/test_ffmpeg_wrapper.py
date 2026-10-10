@@ -11,9 +11,7 @@ class TestFFmpegWrapper(unittest.IsolatedAsyncioTestCase):
     # --- create_final_video ---
 
     @patch("app.backend.utils.ffmpeg_wrapper.asyncio.create_subprocess_exec")
-    async def test_create_final_video_runs_ffmpeg(
-        self, mock_exec: AsyncMock
-    ) -> None:
+    async def test_create_final_video_runs_ffmpeg(self, mock_exec: AsyncMock) -> None:
         """Verifies ffmpeg subprocess is invoked with correct output path."""
         mock_proc = MagicMock()
         mock_proc.communicate = AsyncMock(return_value=(b"", b""))
@@ -56,9 +54,7 @@ class TestFFmpegWrapper(unittest.IsolatedAsyncioTestCase):
     # --- create_short_video ---
 
     @patch("app.backend.utils.ffmpeg_wrapper.asyncio.create_subprocess_exec")
-    async def test_create_short_video_runs_ffmpeg(
-        self, mock_exec: AsyncMock
-    ) -> None:
+    async def test_create_short_video_runs_ffmpeg(self, mock_exec: AsyncMock) -> None:
         """Verifies ffmpeg subprocess is invoked with correct output path."""
         mock_proc = MagicMock()
         mock_proc.communicate = AsyncMock(return_value=(b"", b""))

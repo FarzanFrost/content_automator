@@ -23,9 +23,7 @@ class PromptManager:
             f"Content:\n{summary}"
         )
 
-    def get_concept_prompt(
-        self, summary: str, theme: Optional[str] = None
-    ) -> str:
+    def get_concept_prompt(self, summary: str, theme: Optional[str] = None) -> str:
         """Return a Gemini prompt requesting 3 structured thumbnail concepts.
 
         Args:
