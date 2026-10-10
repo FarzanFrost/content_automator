@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.backend.repositories.notebooklm_repo import NotebookLMRepo
 
@@ -97,3 +97,50 @@ class TestNotebookLMRepo(unittest.IsolatedAsyncioTestCase):
         mock_client.chat.ask.assert_awaited_once_with(
             notebook_id="nb-custom", question="custom summary prompt"
         )
+
+    @patch("app.backend.repositories.notebooklm_repo.NotebookLMClient")
+    async def test_generate_summary_from_storage(self, mock_client_cls: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_ctx = MagicMock()
+        mock_ctx.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_ctx.__aexit__ = AsyncMock(return_value=None)
+        mock_client_cls.from_storage.return_value = mock_ctx
+
+        mock_notebook = MagicMock()
+        mock_notebook.id = "nb-storage"
+        mock_client.notebooks.create = AsyncMock(return_value=mock_notebook)
+        mock_client.sources.add_file = AsyncMock()
+        mock_ask_result = MagicMock()
+        mock_ask_result.answer = "Storage summary"
+        mock_client.chat.ask = AsyncMock(return_value=mock_ask_result)
+
+        repo = NotebookLMRepo()
+        summary = await repo.generate_summary("/path/to/podcast.mp3")
+
+        self.assertEqual(summary, "Storage summary")
+        mock_client_cls.from_storage.assert_called_once()
+        mock_ctx.__aenter__.assert_awaited_once()
+        mock_ctx.__aexit__.assert_awaited_once()
+
+    @patch("app.backend.repositories.notebooklm_repo.NotebookLMClient")
+    async def test_generate_summary_with_auth(self, mock_client_cls: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client_cls.return_value = mock_client
+
+        mock_notebook = MagicMock()
+        mock_notebook.id = "nb-auth"
+        mock_client.notebooks.create = AsyncMock(return_value=mock_notebook)
+        mock_client.sources.add_file = AsyncMock()
+        mock_ask_result = MagicMock()
+        mock_ask_result.answer = "Auth summary"
+        mock_client.chat.ask = AsyncMock(return_value=mock_ask_result)
+
+        repo = NotebookLMRepo(auth="test-auth-token")
+        summary = await repo.generate_summary("/path/to/podcast.mp3")
+
+        self.assertEqual(summary, "Auth summary")
+        mock_client_cls.assert_called_once_with(auth="test-auth-token")
+        mock_client.__aenter__.assert_awaited_once()
+        mock_client.__aexit__.assert_awaited_once()

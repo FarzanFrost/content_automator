@@ -76,7 +76,9 @@ async def test_on_start_phase_1() -> None:
         )
     )
 
-    ui = ContentAutomatorUI(service=mock_service)
+    mock_auth = MagicMock()
+    mock_auth.is_authenticated.return_value = True
+    ui = ContentAutomatorUI(service=mock_service, auth_service=mock_auth)
     state = ProjectState()
 
     summary_out, hashtag_out, gallery_out, out_state, status_out = (
@@ -230,3 +232,57 @@ def test_on_select_thumbnail() -> None:
         "/workspace/output/khutbah/thumbnails/thumbnail_3.png"
     )
     assert "thumbnail_3.png" in msg
+
+
+def test_on_check_auth_status_authenticated() -> None:
+    """Verify on_check_auth_status returns authenticated message when logged in."""
+    mock_auth = MagicMock()
+    mock_auth.is_authenticated.return_value = True
+
+    ui = ContentAutomatorUI(auth_service=mock_auth)
+    result = ui.on_check_auth_status()
+
+    assert "Authenticated" in result
+    mock_auth.is_authenticated.assert_called_once()
+
+
+def test_on_check_auth_status_not_authenticated() -> None:
+    """Verify on_check_auth_status returns not-authenticated message when no session."""
+    mock_auth = MagicMock()
+    mock_auth.is_authenticated.return_value = False
+
+    ui = ContentAutomatorUI(auth_service=mock_auth)
+    result = ui.on_check_auth_status()
+
+    assert "Not authenticated" in result
+    mock_auth.is_authenticated.assert_called_once()
+
+
+@pytest.mark.anyio
+async def test_on_notebooklm_login_delegates_to_auth_service() -> None:
+    """Verify on_notebooklm_login awaits auth_service.login and returns result."""
+    mock_auth = MagicMock()
+    mock_auth.login = AsyncMock(return_value="Authenticated. NotebookLM login successful.")
+
+    ui = ContentAutomatorUI(auth_service=mock_auth)
+    result = await ui.on_notebooklm_login()
+
+    assert result == "Authenticated. NotebookLM login successful."
+    mock_auth.login.assert_awaited_once()
+
+
+@pytest.mark.anyio
+async def test_on_start_phase_1_unauthenticated_returns_error() -> None:
+    """Verify on_start_phase_1 returns error message when NotebookLM is not authenticated."""
+    mock_auth = MagicMock()
+    mock_auth.is_authenticated.return_value = False
+    mock_service = AsyncMock()
+
+    ui = ContentAutomatorUI(service=mock_service, auth_service=mock_auth)
+    summary, hashtags_update, placeholders, new_state, status_msg = (
+        await ui.on_start_phase_1("https://drive.google.com/test", "Theme1")
+    )
+
+    assert "not authenticated" in status_msg.lower()
+    mock_service.phase_1_process.assert_not_called()
+

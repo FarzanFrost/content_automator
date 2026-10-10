@@ -22,6 +22,7 @@ Objective: Establish baseline project structure, package configuration, and init
   - [x] Implement service orchestration layer (`AutomationService`)
   - [x] Implement class-based Gradio UI steps 1-5 and event handlers (`ContentAutomatorUI`, `run.py`)
   - [x] Implement static project resources management (`resources/`, `AppSettings.RESOURCES_DIR`)
+  - [x] Implement NotebookLM authentication service and async context lifecycle (`NotebookLMAuthService`, `NotebookLMRepo`)
   - [ ] Implement `scripts/bump_version.py`
 
 ---

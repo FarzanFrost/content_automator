@@ -38,6 +38,7 @@
 | `SHORT_CANVAS_W` | Constant | Video output | Short-form canvas width: 1080 px |
 | `SHORT_CANVAS_H` | Constant | Video output | Short-form canvas height: 1920 px (9:16) |
 | `SHORT_MAX_DURATION` | Constant | Video output | Maximum short-form video duration: 60 s |
+| `NOTEBOOKLM_STORAGE_PATH` | File Path (`~/.notebooklm/profiles/default/storage_state.json`) | Local auth state | Preserved Google session cookies for `NotebookLMClient` |
 
 ### Data Models & Schemas
 
@@ -69,6 +70,7 @@
 | Service | Module | Purpose |
 |---------|--------|---------|
 | `AutomationService` | `app.backend.services.automation_service` | Orchestrator for Phase 1 (ingestion, summary, early infographics) and Phase 2 (concepts, thumbnails, videos) |
+| `NotebookLMAuthService` | `app.backend.services.notebooklm_auth_service` | Session verification, cache invalidation, and Playwright-driven Google login for NotebookLM |
 
 ### Utilities
 
@@ -104,6 +106,9 @@
 - **Hashtag Selection Clamping**: `ContentAutomatorUI.on_hashtag_change` clamps user hashtag selections to a strict maximum of 2, updating session state and restoring UI selections immediately upon change.
 - **Static Resource Resolution & Fallback**: In `AutomationService.phase_2_process`, when static asset `shorts_video_fancy.mp4` exists in `RESOURCES_DIR`, it is copied into `project_dir` and returned in the deliverables list; otherwise, the pipeline falls back seamlessly to the generated `shorts_video.mp4`.
 - **Gradio Gallery Event Value Extraction**: In `ContentAutomatorUI._extract_path_from_event`, gallery `.select()` events extract file paths across varying Gradio versions and payload formats (dict with image object, dict with caption, raw string, or tuple list) to ensure robust state synchronization.
+- **NotebookLM Client Async Context Lifecycle**: In `NotebookLMRepo`, `_get_client` is decorated with `@asynccontextmanager` ensuring `NotebookLMClient` is entered and exited via `async with` blocks during `generate_summary` and `generate_hashtags`, preventing unhandled session disconnects or hanging connections.
+- **NotebookLM Session Cookie Verification**: `NotebookLMAuthService.is_authenticated` asserts that `storage_state.json` contains both `SID` and `__Secure-1PSIDTS` cookies required by Google services; missing tokens indicate expired or partial sessions.
+- **Phase 1 NotebookLM Authentication Gate**: `ContentAutomatorUI.on_start_phase_1` validates `auth_service.is_authenticated()` prior to dispatching processing, returning a direct user prompt to login if unauthenticated and preventing downstream ingestion failures.
 
 ---
 

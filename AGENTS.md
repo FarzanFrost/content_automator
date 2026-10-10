@@ -79,6 +79,7 @@ Code blocks, commit messages, PR descriptions: write normal always.
   - [x] Automation service orchestration implemented and tested (50 tests passing)
   - [x] Class-based Gradio UI and launch entrypoint implemented and tested (64 tests passing)
   - [x] Centralized prompt management in PromptManager for NotebookLM and Gemini (70 tests passing)
+  - [x] NotebookLM async context lifecycle and browser auth service implemented (85 tests passing)
 
 
 ## Commands
