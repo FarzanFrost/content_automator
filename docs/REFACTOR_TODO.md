@@ -16,6 +16,7 @@ Objective: Establish baseline project structure, package configuration, and init
 - [ ] **1. Project Foundation**
   - [ ] Setup `pyproject.toml`
   - [x] Configure `pytest` and linter tooling
+  - [x] Implement foundational entities and settings (`ThumbnailConcept`, `ConceptList`, `ProjectState`, `AppSettings`)
   - [ ] Implement `scripts/bump_version.py`
 
 ---
