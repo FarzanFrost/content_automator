@@ -22,6 +22,10 @@ source .venv/Scripts/activate
 
 ### 2. Testing
 Run test suite:
+```powershell
+.venv\Scripts\python.exe -m pytest
+```
+Or with activated environment:
 ```bash
 pytest
 ```

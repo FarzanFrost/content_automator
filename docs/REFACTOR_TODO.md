@@ -15,7 +15,7 @@ Objective: Establish baseline project structure, package configuration, and init
 
 - [ ] **1. Project Foundation**
   - [ ] Setup `pyproject.toml`
-  - [ ] Configure `pytest` and linter tooling
+  - [x] Configure `pytest` and linter tooling
   - [ ] Implement `scripts/bump_version.py`
 
 ---
