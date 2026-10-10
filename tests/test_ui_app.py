@@ -79,10 +79,12 @@ async def test_on_start_phase_1() -> None:
     ui = ContentAutomatorUI(service=mock_service)
     state = ProjectState()
 
-    summary_out, hashtag_out, gallery_out, out_state, status_out = await ui.on_start_phase_1(
-        drive_link="https://drive.google.com/file/d/test12345/view",
-        themes_str="peace, charity",
-        state=state,
+    summary_out, hashtag_out, gallery_out, out_state, status_out = (
+        await ui.on_start_phase_1(
+            drive_link="https://drive.google.com/file/d/test12345/view",
+            themes_str="peace, charity",
+            state=state,
+        )
     )
 
     mock_service.phase_1_process.assert_awaited_once_with(
@@ -228,4 +230,3 @@ def test_on_select_thumbnail() -> None:
         "/workspace/output/khutbah/thumbnails/thumbnail_3.png"
     )
     assert "thumbnail_3.png" in msg
-

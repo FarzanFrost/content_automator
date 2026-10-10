@@ -133,16 +133,19 @@ Orchestrators dispatch jobs. Domain logic handles transformations. Repositories 
 
 | Class | Module | Responsibility |
 |-------|--------|---------------|
-| `PromptManager` | `utils.prompt_manager` | Factory methods returning formatted prompt strings for Gemini |
+| `PromptManager` | `utils.prompt_manager` | Factory methods returning formatted prompt strings for NotebookLM, Imagen 3, and Gemini |
 | `FFmpegWrapper` | `utils.ffmpeg_wrapper` | Async wrapper producing final video, 9:16 short video, and 9:16 short thumbnail |
 
 #### `PromptManager` methods
 
 | Method | Output |
 |--------|--------|
-| `get_infographic_prompt(summary)` | 16:9 infographic prompt — title forced to `A FRIDAY SERMON SUMMARY` |
-| `get_concept_prompt(summary, theme?)` | Requests 3 thumbnail concepts with Visual Hook, Design Directive, Text Hook, Color Theory |
-| `get_thumbnail_prompt(concept, reference_image)` | 16:9 YouTube thumbnail prompt — always enforces `avoid generating eyes` for Islamic compliance |
+| `get_summary_prompt()` | Prompt asking NotebookLM to translate into English and structure content into topics |
+| `get_hashtags_prompt()` | Prompt asking NotebookLM for 5 to 10 topic-specific YouTube hashtags prefixed with `#` |
+| `get_infographic_prompt(summary)` | 16:9 infographic image prompt — title forced to `A FRIDAY SERMON SUMMARY` |
+| `get_concept_prompt(summary, theme?)` | Master Digital Content Strategist prompt for 3 thumbnail concepts across psychological triggers |
+| `get_thumbnail_prompt(concept, reference_image)` | 16:9 YouTube thumbnail prompt — matches reference image and enforces `avoid generating eyes` |
+
 
 #### `FFmpegWrapper` methods
 

@@ -9,6 +9,8 @@ try:
 except ImportError:
     NotebookLMClient = Any  # type: ignore[assignment, misc]
 
+from app.backend.utils.prompt_manager import PromptManager
+
 
 class NotebookLMRepo:
     """Repository wrapping NotebookLM API to extract audio summaries and hashtags."""
@@ -17,10 +19,12 @@ class NotebookLMRepo:
         self,
         client: Optional[Any] = None,
         auth: Optional[Any] = None,
+        prompt_manager: Optional[PromptManager] = None,
     ) -> None:
-        """Initialize NotebookLM repository with optional client or auth tokens."""
+        """Initialize NotebookLM repository with optional client, auth tokens, or prompt manager."""
         self._client = client
         self._auth = auth
+        self._prompt_manager = prompt_manager or PromptManager()
 
     def _get_client(self) -> Any:
         """Get existing client or create instance from auth/storage."""
@@ -48,7 +52,7 @@ class NotebookLMRepo:
 
         response = await client.chat.ask(
             notebook_id=notebook.id,
-            question="Provide a comprehensive summary of this audio content.",
+            question=self._prompt_manager.get_summary_prompt(),
         )
         return response.answer
 
@@ -66,10 +70,7 @@ class NotebookLMRepo:
 
         response = await client.chat.ask(
             notebook_id=notebook.id,
-            question=(
-                "Generate 5 to 10 relevant YouTube hashtags for this content. "
-                "Output each hashtag prefixed with # separated by spaces."
-            ),
+            question=self._prompt_manager.get_hashtags_prompt(),
         )
 
         raw_text = response.answer

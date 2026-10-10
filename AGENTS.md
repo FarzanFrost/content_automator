@@ -78,6 +78,8 @@ Code blocks, commit messages, PR descriptions: write normal always.
   - [x] Repository layer adapters implemented and tested (23 tests passing)
   - [x] Automation service orchestration implemented and tested (50 tests passing)
   - [x] Class-based Gradio UI and launch entrypoint implemented and tested (64 tests passing)
+  - [x] Centralized prompt management in PromptManager for NotebookLM and Gemini (70 tests passing)
+
 
 ## Commands
 - `python -m src.main`: local development.
