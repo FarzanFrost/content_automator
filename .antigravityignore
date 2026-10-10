@@ -1,0 +1,24 @@
+# Virtual Environments
+.venv/
+env/
+venv/
+
+# Dependency Lock Files
+Pipfile.lock
+poetry.lock
+
+# Build & Cache Directories
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Local System Files
+.DS_Store
+
+# Secret & Configuration Files (NEVER commit these)
+.env
+local_config.yaml
+credentials.json

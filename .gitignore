@@ -1,0 +1,30 @@
+# Bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environments
+.venv/
+env/
+venv/
+ENV/
+
+# Build & distribution
+dist/
+build/
+*.egg-info/
+
+# Configuration & secrets
+.env
+local_config.yaml
+credentials.json
+
+# IDE & OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
