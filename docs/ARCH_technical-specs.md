@@ -27,8 +27,11 @@
 |----------------|------|-------|-------|
 | `CONTENT_CACHE_DIR` | Directory Path | Local state | Cache directory for intermediate artifacts |
 | `APP_CONFIG_PATH` | File Path | Global config | Path to configuration file |
-| `GEMINI_API_KEY` | Environment Variable | Global config | Secret API authentication key for Gemini API |
-| `DEFAULT_N_INFOGRAPHICS` | Environment Variable | Global config | Default count for infographic generation (default: 3) |
+| `GEMINI_IMAGE_API_KEY` | Environment Variable | Global config | API key for Gemini image generation calls |
+| `GEMINI_CONCEPTS_API_KEY` | Environment Variable | Global config | API key for Gemini structured concept generation calls |
+| `GEMINI_IMAGE_MODEL` | Environment Variable | Global config | Model used for Gemini image generation (e.g. `gemini-2.5-flash-image`) |
+| `GEMINI_CONCEPTS_MODEL` | Environment Variable | Global config | Model used for structured concept generation (e.g. `gemini-2.5-flash`) |
+| `DEFAULT_N_INFOGRAPHICS` | Environment Variable | Global config | Default count for infographic generation (default: 1) |
 | `SHORTS_BGM_PATH` | Environment Variable | Global config | Path to background music track for shorts |
 | `BASE_OUTPUT_DIR` | Environment Variable | Global config | Root output directory path for project assets |
 | `RESOURCES_DIR` | Environment Variable | Global config | Directory path for static external project assets (default: `resources`) |
@@ -63,7 +66,7 @@
 | `FileRepo` | `app.backend.repositories.file_repo` | Local filesystem project directory structure and versioned markdown storage |
 | `GoogleDriveRepo` | `app.backend.repositories.gdrive_repo` | Audio asset download and Drive metadata resolution |
 | `NotebookLMRepo` | `app.backend.repositories.notebooklm_repo` | NotebookLM audio source ingestion, summaries, and hashtag generation |
-| `GeminiRepo` | `app.backend.repositories.gemini_repo` | Multimodal Imagen 3 image generation and Gemini 1.5 Pro structured concept parsing |
+| `GeminiRepo` | `app.backend.repositories.gemini_repo` | Gemini image generation (`_image_client`) and structured concept parsing (`_concepts_client`), each using a dedicated API key and model |
 
 ### Services
 
@@ -109,6 +112,10 @@
 - **NotebookLM Client Async Context Lifecycle**: In `NotebookLMRepo`, `_get_client` is decorated with `@asynccontextmanager` ensuring `NotebookLMClient` is entered and exited via `async with` blocks during `generate_summary` and `generate_hashtags`, preventing unhandled session disconnects or hanging connections.
 - **NotebookLM Session Cookie Verification**: `NotebookLMAuthService.is_authenticated` asserts that `storage_state.json` contains both `SID` and `__Secure-1PSIDTS` cookies required by Google services; missing tokens indicate expired or partial sessions.
 - **Phase 1 NotebookLM Authentication Gate**: `ContentAutomatorUI.on_start_phase_1` validates `auth_service.is_authenticated()` prior to dispatching processing, returning a direct user prompt to login if unauthenticated and preventing downstream ingestion failures.
+- **Gemini Developer API Image Modality**: `GeminiRepo.generate_image` uses `generate_content` with `types.GenerateContentConfig(response_modalities=['IMAGE'])` to support Gemini Developer API mode without requiring Vertex AI enterprise endpoints.
+- **Gemini Split Client Architecture**: `GeminiRepo` maintains two separate `genai.Client` instances — `_image_client` (keyed by `GEMINI_IMAGE_API_KEY`, model `GEMINI_IMAGE_MODEL`) and `_concepts_client` (keyed by `GEMINI_CONCEPTS_API_KEY`, model `GEMINI_CONCEPTS_MODEL`) — allowing independent quota, project, and model configuration per operation type. Both clients are injectable for testing.
+- **Safe Background Image Generation**: `AutomationService._safe_generate_image` wraps `GeminiRepo.generate_image` in a try/except, logging errors without re-raising, so background task failures never surface as unhandled exceptions in the Gradio event loop.
+- **Gradio Output Path Whitelisting & Placeholders**: `run.py` whitelists `BASE_OUTPUT_DIR` in `demo.launch(allowed_paths=[...])`, and `AutomationService.phase_1_process` writes immediate placeholder PNG files to disk, ensuring Gradio file cache validation passes before async image generation completes.
 
 ---
 

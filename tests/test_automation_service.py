@@ -127,6 +127,41 @@ class TestAutomationService(unittest.IsolatedAsyncioTestCase):
         await asyncio.sleep(0.05)
         self.assertEqual(self.gemini_repo.generate_image.call_count, 3)
 
+    async def test_phase_1_process_background_task_error_handled(self) -> None:
+        """Verify errors during background image generation are safely logged and do not raise."""
+        test_audio = self.tmp_path / "audio_err.mp3"
+        test_audio.write_text("dummy audio")
+
+        self.gdrive_repo.download_audio.return_value = str(test_audio)
+        project_dir = self.tmp_path / "project_audio_err"
+        self.file_repo.create_project_env.return_value = str(project_dir)
+        self.gemini_repo.generate_image = AsyncMock(
+            side_effect=RuntimeError("Gemini API quota exceeded")
+        )
+
+        service = AutomationService(
+            file_repo=self.file_repo,
+            gdrive_repo=self.gdrive_repo,
+            notebooklm_repo=self.notebooklm_repo,
+            gemini_repo=self.gemini_repo,
+            prompt_manager=self.prompt_manager,
+            ffmpeg_wrapper=self.ffmpeg_wrapper,
+        )
+
+        state, placeholders = await service.phase_1_process(
+            drive_link="https://drive.google.com/file/d/test1234/view",
+            themes=["Theme"],
+            n_infographics=2,
+        )
+
+        self.assertEqual(len(placeholders), 2)
+        for p in placeholders:
+            self.assertTrue(Path(p).exists())
+
+        # Allow background tasks to complete and verify generate_image was called
+        await asyncio.sleep(0.05)
+        self.assertEqual(self.gemini_repo.generate_image.call_count, 2)
+
     async def test_phase_2_process_missing_infographic(self) -> None:
         """Verify Phase 2 raises ValueError if no infographic selected in state."""
         service = AutomationService(

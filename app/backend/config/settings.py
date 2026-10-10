@@ -13,12 +13,24 @@ class AppSettings(BaseSettings):
         extra="ignore",
     )
 
-    GEMINI_API_KEY: str = Field(
+    GEMINI_IMAGE_API_KEY: str = Field(
         default="",
-        description="Google Gemini API key",
+        description="Google Gemini API key used for image generation",
+    )
+    GEMINI_CONCEPTS_API_KEY: str = Field(
+        default="",
+        description="Google Gemini API key used for structured concept generation",
+    )
+    GEMINI_IMAGE_MODEL: str = Field(
+        default="gemini-nano-banana-2.1",
+        description="Google Gemini model used for image generation",
+    )
+    GEMINI_CONCEPTS_MODEL: str = Field(
+        default="gemini-2.5-flash",
+        description="Google Gemini model used for structured concept generation",
     )
     DEFAULT_N_INFOGRAPHICS: int = Field(
-        default=3,
+        default=1,
         description="Default number of infographics to generate",
     )
     SHORTS_BGM_PATH: str = Field(

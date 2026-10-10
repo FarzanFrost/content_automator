@@ -102,21 +102,27 @@ class TestProjectState(unittest.TestCase):
 class TestAppSettings(unittest.TestCase):
     def test_app_settings_defaults(self) -> None:
         settings = AppSettings()
-        self.assertEqual(settings.DEFAULT_N_INFOGRAPHICS, 3)
-        self.assertIsInstance(settings.GEMINI_API_KEY, str)
+        self.assertIsInstance(settings.DEFAULT_N_INFOGRAPHICS, int)
+        self.assertIsInstance(settings.GEMINI_IMAGE_API_KEY, str)
+        self.assertIsInstance(settings.GEMINI_CONCEPTS_API_KEY, str)
+        self.assertIsInstance(settings.GEMINI_IMAGE_MODEL, str)
         self.assertIsInstance(settings.SHORTS_BGM_PATH, str)
         self.assertIsInstance(settings.BASE_OUTPUT_DIR, str)
         self.assertEqual(settings.RESOURCES_DIR, "resources")
 
     def test_app_settings_custom_values(self) -> None:
         settings = AppSettings(
-            GEMINI_API_KEY="test_key",
+            GEMINI_IMAGE_API_KEY="test_image_key",
+            GEMINI_CONCEPTS_API_KEY="test_concepts_key",
             DEFAULT_N_INFOGRAPHICS=5,
             SHORTS_BGM_PATH="/path/to/bgm.mp3",
             BASE_OUTPUT_DIR="/path/to/output",
             RESOURCES_DIR="/custom/resources",
         )
-        self.assertEqual(settings.GEMINI_API_KEY, "test_key")
+        self.assertEqual(settings.GEMINI_IMAGE_API_KEY, "test_image_key")
+        self.assertEqual(settings.GEMINI_CONCEPTS_API_KEY, "test_concepts_key")
+        self.assertIsInstance(settings.GEMINI_IMAGE_MODEL, str)
+        self.assertIsInstance(settings.GEMINI_CONCEPTS_MODEL, str)
         self.assertEqual(settings.DEFAULT_N_INFOGRAPHICS, 5)
         self.assertEqual(settings.SHORTS_BGM_PATH, "/path/to/bgm.mp3")
         self.assertEqual(settings.BASE_OUTPUT_DIR, "/path/to/output")
