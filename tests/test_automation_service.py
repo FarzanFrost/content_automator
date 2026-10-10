@@ -357,4 +357,140 @@ class TestAutomationService(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(first_call[0][0], float)
         self.assertIsInstance(first_call[0][1], str)
 
+    async def test_generate_notebooklm_artifacts(self) -> None:
+        """Verify generate_notebooklm_artifacts downloads audio, sets up env, summarizes and returns state."""
+        test_audio = self.tmp_path / "audio_nb.mp3"
+        test_audio.write_text("dummy audio")
+        self.gdrive_repo.download_audio.return_value = str(test_audio)
+        project_dir = self.tmp_path / "project_nb"
+        self.file_repo.create_project_env.return_value = str(project_dir)
+
+        service = AutomationService(
+            file_repo=self.file_repo,
+            gdrive_repo=self.gdrive_repo,
+            notebooklm_repo=self.notebooklm_repo,
+            gemini_repo=self.gemini_repo,
+            prompt_manager=self.prompt_manager,
+            ffmpeg_wrapper=self.ffmpeg_wrapper,
+        )
+
+        state = await service.generate_notebooklm_artifacts(
+            drive_link="https://drive.google.com/file/d/test1234/view",
+            themes=["Theme1", "Theme2"],
+        )
+
+        self.assertEqual(state.project_dir, str(project_dir.resolve()))
+        self.assertEqual(state.summary_v1, "Detailed sermon summary.")
+        self.assertEqual(state.selected_hashtags, ["#Khutbah", "#Islam", "#Faith"])
+        self.file_repo.save_text_version.assert_called_once_with(
+            "Detailed sermon summary.", "v1_auto.md", str(project_dir)
+        )
+
+    async def test_generate_infographics(self) -> None:
+        """Verify generate_infographics generates the specified number of infographics."""
+        project_dir = self.tmp_path / "proj_info"
+        project_dir.mkdir(parents=True, exist_ok=True)
+        service = AutomationService(
+            file_repo=self.file_repo,
+            gemini_repo=self.gemini_repo,
+            prompt_manager=self.prompt_manager,
+        )
+        state = ProjectState(
+            project_dir=str(project_dir),
+            summary_v1="Summary for infographic",
+        )
+
+        paths = await service.generate_infographics(state, n_infographics=3)
+        self.assertEqual(len(paths), 3)
+        self.assertEqual(self.gemini_repo.generate_image.call_count, 3)
+
+    async def test_generate_thumbnails(self) -> None:
+        """Verify generate_thumbnails creates concepts and renders thumbnails."""
+        project_dir = self.tmp_path / "proj_thumb"
+        project_dir.mkdir(parents=True, exist_ok=True)
+        service = AutomationService(
+            gemini_repo=self.gemini_repo,
+            prompt_manager=self.prompt_manager,
+        )
+        state = ProjectState(
+            project_dir=str(project_dir),
+            summary_v1="Summary for thumb",
+            themes=["T1"],
+            selected_infographic_path=str(project_dir / "info.png"),
+        )
+
+        paths = await service.generate_thumbnails(state)
+        # k=1 -> k+1=2 concept calls -> 2 * 3 = 6 thumbnails
+        self.assertEqual(self.gemini_repo.generate_structured_concepts.call_count, 2)
+        self.assertEqual(self.gemini_repo.generate_image.call_count, 6)
+        self.assertEqual(len(paths), 6)
+
+    async def test_create_final_video(self) -> None:
+        """Verify create_final_video invokes FFmpegWrapper with selected infographic."""
+        project_dir = self.tmp_path / "proj_vid"
+        project_dir.mkdir(parents=True, exist_ok=True)
+        service = AutomationService(ffmpeg_wrapper=self.ffmpeg_wrapper)
+        state = ProjectState(
+            project_dir=str(project_dir),
+            audio_path=str(project_dir / "audio.mp3"),
+            selected_infographic_path=str(project_dir / "info.png"),
+        )
+
+        out_path = await service.create_final_video(state)
+        expected = str((project_dir / "final_video.mp4").resolve())
+        self.assertEqual(out_path, expected)
+        self.ffmpeg_wrapper.create_final_video.assert_called_once_with(
+            state.selected_infographic_path, state.audio_path, expected
+        )
+
+    async def test_create_short_video(self) -> None:
+        """Verify create_short_video invokes FFmpegWrapper with selected infographic and BGM."""
+        project_dir = self.tmp_path / "proj_short"
+        project_dir.mkdir(parents=True, exist_ok=True)
+        bgm_path = str(self.tmp_path / "bgm.mp3")
+        service = AutomationService(
+            ffmpeg_wrapper=self.ffmpeg_wrapper, bgm_path=bgm_path
+        )
+        state = ProjectState(
+            project_dir=str(project_dir),
+            selected_infographic_path=str(project_dir / "info.png"),
+        )
+
+        out_path = await service.create_short_video(state)
+        expected = str((project_dir / "shorts_video.mp4").resolve())
+        self.assertEqual(out_path, expected)
+        self.ffmpeg_wrapper.create_short_video.assert_called_once_with(
+            state.selected_infographic_path, bgm_path, expected
+        )
+
+    async def test_create_short_thumbnail_uses_selected_thumbnail(self) -> None:
+        """Verify create_short_thumbnail uses selected_thumbnail_path (not infographic)."""
+        project_dir = self.tmp_path / "proj_thumb_short"
+        project_dir.mkdir(parents=True, exist_ok=True)
+        service = AutomationService(ffmpeg_wrapper=self.ffmpeg_wrapper)
+        state = ProjectState(
+            project_dir=str(project_dir),
+            selected_infographic_path=str(project_dir / "info.png"),
+            selected_thumbnail_path=str(project_dir / "thumb_selected.png"),
+        )
+
+        out_path = await service.create_short_thumbnail(state)
+        expected = str((project_dir / "shorts_thumbnail.png").resolve())
+        self.assertEqual(out_path, expected)
+        # Crucial: Must use selected_thumbnail_path, not infographic
+        self.ffmpeg_wrapper.create_short_thumbnail.assert_called_once_with(
+            str(project_dir / "thumb_selected.png"), expected
+        )
+
+    async def test_create_short_thumbnail_raises_without_selection(self) -> None:
+        """Verify create_short_thumbnail raises ValueError if no thumbnail selected."""
+        service = AutomationService(ffmpeg_wrapper=self.ffmpeg_wrapper)
+        state = ProjectState(
+            project_dir="/tmp/dummy",
+            selected_thumbnail_path="",
+        )
+        with self.assertRaises(ValueError):
+            await service.create_short_thumbnail(state)
+
+
 

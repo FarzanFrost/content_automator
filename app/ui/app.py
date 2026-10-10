@@ -46,6 +46,137 @@ class ContentAutomatorUI:
             self._auth_service = NotebookLMAuthService()
         return self._auth_service
 
+    async def on_start_notebooklm(
+        self,
+        drive_link: str,
+        themes_str: str,
+        state: Optional[ProjectState] = None,
+    ) -> Tuple[str, Any, ProjectState, str]:
+        """Execute audio ingestion and NotebookLM processing (summary, hashtags)."""
+        current_state = state if state is not None else ProjectState()
+
+        cleaned_link = drive_link.strip() if drive_link else ""
+        if not cleaned_link:
+            return (
+                "",
+                gr.update(choices=[], value=[]),
+                current_state,
+                "Error: Google Drive Link is required.",
+            )
+
+        if not self.auth_service.is_authenticated():
+            return (
+                "",
+                gr.update(choices=[], value=[]),
+                current_state,
+                "Error: NotebookLM is not authenticated. Please click 'Login to NotebookLM' below to connect your Google account.",
+            )
+
+        themes = [t.strip() for t in themes_str.split(",") if t.strip()]
+
+        new_state = await self.service.generate_notebooklm_artifacts(
+            cleaned_link, themes
+        )
+
+        hashtag_choices = list(new_state.selected_hashtags)
+        selected_default = hashtag_choices[:2]
+        new_state.selected_hashtags = selected_default
+
+        status_msg = (
+            f"Complete: NotebookLM summary and hashtags generated. "
+            f"Project initialized at {new_state.project_dir}"
+        )
+
+        return (
+            new_state.summary_v1,
+            gr.update(choices=hashtag_choices, value=selected_default),
+            new_state,
+            status_msg,
+        )
+
+    async def on_generate_infographics(
+        self,
+        state: Optional[ProjectState] = None,
+    ) -> Tuple[List[str], ProjectState, str]:
+        """Generate infographics automatically without user intervention."""
+        current_state = state if state is not None else ProjectState()
+
+        if not current_state.project_dir or not current_state.summary_v1:
+            return [], current_state, "Error: Project directory or summary missing."
+
+        infographics = await self.service.generate_infographics(
+            current_state, n_infographics=3
+        )
+
+        status_msg = f"Complete: Generated {len(infographics)} infographics."
+        return infographics, current_state, status_msg
+
+    def on_click_confirm_infographic(
+        self, state: Optional[ProjectState] = None
+    ) -> Tuple[Any, str]:
+        """Disable button upon valid infographic confirmation or show error."""
+        current_state = state if state is not None else ProjectState()
+        if not current_state.selected_infographic_path:
+            return (
+                gr.update(interactive=True),
+                "Error: Please select an infographic before confirming.",
+            )
+        return (
+            gr.update(interactive=False),
+            "Infographic confirmed. Generating deliverables...",
+        )
+
+    async def on_create_final_video(
+        self, state: Optional[ProjectState] = None
+    ) -> Tuple[Optional[str], str]:
+        """Independently generate 16:9 final video."""
+        current_state = state if state is not None else ProjectState()
+        if not current_state.selected_infographic_path:
+            return None, "Error: Infographic not selected."
+        video_path = await self.service.create_final_video(current_state)
+        return video_path, f"Final video rendered: {video_path}"
+
+    async def on_create_short_video(
+        self, state: Optional[ProjectState] = None
+    ) -> Tuple[Optional[str], str]:
+        """Independently generate 9:16 shorts video."""
+        current_state = state if state is not None else ProjectState()
+        if not current_state.selected_infographic_path:
+            return None, "Error: Infographic not selected."
+        short_path = await self.service.create_short_video(current_state)
+        return short_path, f"Shorts video rendered: {short_path}"
+
+    async def on_generate_thumbnails(
+        self, state: Optional[ProjectState] = None
+    ) -> Tuple[List[str], str]:
+        """Independently generate thumbnail concepts and images."""
+        current_state = state if state is not None else ProjectState()
+        if not current_state.selected_infographic_path:
+            return [], "Error: Infographic not selected."
+        thumbnails = await self.service.generate_thumbnails(current_state)
+        return (
+            thumbnails,
+            f"Thumbnails generated ({len(thumbnails)}). Please select 1 final thumbnail below.",
+        )
+
+    async def on_confirm_thumbnail(
+        self, state: Optional[ProjectState] = None
+    ) -> Tuple[Optional[str], Any, str]:
+        """Generate 9:16 short thumbnail for the user's selected 16:9 thumbnail."""
+        current_state = state if state is not None else ProjectState()
+        if not current_state.selected_thumbnail_path:
+            return (
+                None,
+                gr.update(interactive=True),
+                "Error: Please select a thumbnail before confirming.",
+            )
+        short_thumb_path = await self.service.create_short_thumbnail(current_state)
+        return (
+            short_thumb_path,
+            gr.update(interactive=False),
+            f"Shorts thumbnail created from selected thumbnail: {short_thumb_path}",
+        )
+
     async def on_start_phase_1(
         self,
         drive_link: str,
@@ -333,29 +464,44 @@ class ContentAutomatorUI:
                             allow_preview=False,
                             columns=3,
                         )
+                        confirm_thumbnail_btn = gr.Button(
+                            "Confirm Thumbnail & Create Shorts Thumbnail", variant="primary"
+                        )
                         thumbnail_status_markdown = gr.Markdown()
 
                     with gr.Accordion("Step 5: Final Outputs", open=True):
                         with gr.Row():
-                            final_video_player = gr.Video(label="Final Video (16:9)")
-                            shorts_video_player = gr.Video(
-                                label="Shorts Video Fancy (9:16)"
-                            )
-                            shorts_thumb_display = gr.Image(
-                                label="Shorts Thumbnail (9:16)"
-                            )
-                        final_outputs_status_markdown = gr.Markdown()
+                            with gr.Column():
+                                final_video_player = gr.Video(label="Final Video (16:9)")
+                                final_video_status_markdown = gr.Markdown()
+                            with gr.Column():
+                                shorts_video_player = gr.Video(
+                                    label="Shorts Video Fancy (9:16)"
+                                )
+                                shorts_video_status_markdown = gr.Markdown()
+                            with gr.Column():
+                                shorts_thumb_display = gr.Image(
+                                    label="Shorts Thumbnail (9:16)"
+                                )
+                                shorts_thumb_status_markdown = gr.Markdown()
 
                     # Event bindings
                     phase1_btn.click(
-                        fn=self.on_start_phase_1,
+                        fn=self.on_start_notebooklm,
                         inputs=[drive_link_input, themes_input, session_state],
                         outputs=[
                             summary_textbox,
                             hashtags_checkbox,
-                            infographics_gallery,
                             session_state,
                             summary_status_markdown,
+                        ],
+                    ).then(
+                        fn=self.on_generate_infographics,
+                        inputs=[session_state],
+                        outputs=[
+                            infographics_gallery,
+                            session_state,
+                            infographic_status_markdown,
                         ],
                     )
 
@@ -384,15 +530,35 @@ class ContentAutomatorUI:
                     )
 
                     confirm_infographic_btn.click(
-                        fn=self.on_confirm_infographic,
+                        fn=self.on_click_confirm_infographic,
+                        inputs=[session_state],
+                        outputs=[
+                            confirm_infographic_btn,
+                            infographic_status_markdown,
+                        ],
+                    )
+                    confirm_infographic_btn.click(
+                        fn=self.on_create_final_video,
+                        inputs=[session_state],
+                        outputs=[
+                            final_video_player,
+                            final_video_status_markdown,
+                        ],
+                    )
+                    confirm_infographic_btn.click(
+                        fn=self.on_create_short_video,
+                        inputs=[session_state],
+                        outputs=[
+                            shorts_video_player,
+                            shorts_video_status_markdown,
+                        ],
+                    )
+                    confirm_infographic_btn.click(
+                        fn=self.on_generate_thumbnails,
                         inputs=[session_state],
                         outputs=[
                             thumbnails_gallery,
-                            final_video_player,
-                            shorts_video_player,
-                            shorts_thumb_display,
-                            final_outputs_status_markdown,
-                            session_state,
+                            thumbnail_status_markdown,
                         ],
                     )
 
@@ -400,6 +566,16 @@ class ContentAutomatorUI:
                         fn=self.on_select_thumbnail,
                         inputs=[session_state],
                         outputs=[thumbnail_status_markdown, session_state],
+                    )
+
+                    confirm_thumbnail_btn.click(
+                        fn=self.on_confirm_thumbnail,
+                        inputs=[session_state],
+                        outputs=[
+                            shorts_thumb_display,
+                            confirm_thumbnail_btn,
+                            shorts_thumb_status_markdown,
+                        ],
                     )
 
                 with gr.Tab("Settings"):

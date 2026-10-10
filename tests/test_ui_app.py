@@ -380,3 +380,126 @@ def test_on_summary_change() -> None:
     assert ui.on_summary_change("") == "Character count: 0"
     assert ui.on_summary_change(None) == "Character count: 0"
 
+
+@pytest.mark.anyio
+async def test_on_start_notebooklm_success() -> None:
+    """Verify on_start_notebooklm executes NotebookLM step and returns summary and hashtags."""
+    mock_service = MagicMock(spec=AutomationService)
+    state = ProjectState(
+        project_dir="/workspace/proj",
+        summary_v1="NotebookLM Summary",
+        selected_hashtags=["#A", "#B", "#C"],
+    )
+    mock_service.generate_notebooklm_artifacts = AsyncMock(return_value=state)
+    mock_auth = MagicMock()
+    mock_auth.is_authenticated.return_value = True
+
+    ui = ContentAutomatorUI(service=mock_service, auth_service=mock_auth)
+    summary, hashtags_update, out_state, status_msg = await ui.on_start_notebooklm(
+        "https://drive.google.com/test", "faith, hope"
+    )
+
+    mock_service.generate_notebooklm_artifacts.assert_awaited_once_with(
+        "https://drive.google.com/test", ["faith", "hope"]
+    )
+    assert summary == "NotebookLM Summary"
+    assert hashtags_update["choices"] == ["#A", "#B", "#C"]
+    assert hashtags_update["value"] == ["#A", "#B"]
+    assert "Complete" in status_msg
+
+
+@pytest.mark.anyio
+async def test_on_generate_infographics_success() -> None:
+    """Verify on_generate_infographics invokes service and returns infographic paths."""
+    mock_service = MagicMock(spec=AutomationService)
+    mock_service.generate_infographics = AsyncMock(
+        return_value=["/workspace/proj/infographics/infographic_1.png"]
+    )
+    ui = ContentAutomatorUI(service=mock_service)
+    state = ProjectState(project_dir="/workspace/proj", summary_v1="Summary")
+
+    paths, out_state, status_msg = await ui.on_generate_infographics(state)
+
+    mock_service.generate_infographics.assert_awaited_once_with(state, n_infographics=3)
+    assert paths == ["/workspace/proj/infographics/infographic_1.png"]
+    assert "Complete" in status_msg
+
+
+def test_on_click_confirm_infographic() -> None:
+    """Verify on_click_confirm_infographic disables button if infographic selected."""
+    ui = ContentAutomatorUI()
+    state_valid = ProjectState(selected_infographic_path="/path/to/info.png")
+    btn_update, msg = ui.on_click_confirm_infographic(state_valid)
+    assert btn_update["interactive"] is False
+    assert "confirmed" in msg.lower()
+
+    state_invalid = ProjectState(selected_infographic_path="")
+    btn_update_inv, msg_inv = ui.on_click_confirm_infographic(state_invalid)
+    assert btn_update_inv["interactive"] is True
+    assert "Error" in msg_inv
+
+
+@pytest.mark.anyio
+async def test_on_create_final_video() -> None:
+    """Verify on_create_final_video invokes service.create_final_video."""
+    mock_service = MagicMock(spec=AutomationService)
+    mock_service.create_final_video = AsyncMock(return_value="/workspace/final.mp4")
+    ui = ContentAutomatorUI(service=mock_service)
+    state = ProjectState(selected_infographic_path="/path/to/info.png")
+
+    path, status = await ui.on_create_final_video(state)
+    assert path == "/workspace/final.mp4"
+    assert "Final video rendered" in status
+
+
+@pytest.mark.anyio
+async def test_on_create_short_video() -> None:
+    """Verify on_create_short_video invokes service.create_short_video."""
+    mock_service = MagicMock(spec=AutomationService)
+    mock_service.create_short_video = AsyncMock(return_value="/workspace/short.mp4")
+    ui = ContentAutomatorUI(service=mock_service)
+    state = ProjectState(selected_infographic_path="/path/to/info.png")
+
+    path, status = await ui.on_create_short_video(state)
+    assert path == "/workspace/short.mp4"
+    assert "Shorts video rendered" in status
+
+
+@pytest.mark.anyio
+async def test_on_generate_thumbnails() -> None:
+    """Verify on_generate_thumbnails invokes service.generate_thumbnails."""
+    mock_service = MagicMock(spec=AutomationService)
+    mock_service.generate_thumbnails = AsyncMock(
+        return_value=["/workspace/thumb_1.png", "/workspace/thumb_2.png"]
+    )
+    ui = ContentAutomatorUI(service=mock_service)
+    state = ProjectState(selected_infographic_path="/path/to/info.png")
+
+    paths, status = await ui.on_generate_thumbnails(state)
+    assert len(paths) == 2
+    assert "Thumbnails generated" in status
+
+
+@pytest.mark.anyio
+async def test_on_confirm_thumbnail() -> None:
+    """Verify on_confirm_thumbnail invokes service.create_short_thumbnail on selected thumbnail."""
+    mock_service = MagicMock(spec=AutomationService)
+    mock_service.create_short_thumbnail = AsyncMock(
+        return_value="/workspace/shorts_thumbnail.png"
+    )
+    ui = ContentAutomatorUI(service=mock_service)
+    state = ProjectState(selected_thumbnail_path="/workspace/thumb_1.png")
+
+    path, btn_update, status = await ui.on_confirm_thumbnail(state)
+    assert path == "/workspace/shorts_thumbnail.png"
+    assert btn_update["interactive"] is False
+    assert "created" in status.lower()
+
+    # Without selection returns error and leaves button enabled
+    state_empty = ProjectState(selected_thumbnail_path="")
+    path_err, btn_update_err, status_err = await ui.on_confirm_thumbnail(state_empty)
+    assert path_err is None
+    assert btn_update_err["interactive"] is True
+    assert "Error" in status_err
+
+
