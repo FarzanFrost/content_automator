@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import re
 import shutil
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Set, Tuple
@@ -17,6 +18,20 @@ from app.backend.repositories.gemini_repo import GeminiRepo
 from app.backend.repositories.notebooklm_repo import NotebookLMRepo
 from app.backend.utils.ffmpeg_wrapper import FFmpegWrapper
 from app.backend.utils.prompt_manager import PromptManager
+
+
+def clean_summary(summary: Optional[str]) -> str:
+    """Clean markdown artifacts, citations, and excessive whitespace from summary text."""
+    if not summary:
+        return ""
+    # Strip markdown formatting characters
+    cleaned = summary.strip().replace("*", "").replace("#", "").replace("---", "")
+    # Remove citations like [1] or [1, 2]
+    cleaned = re.sub(r"\[\d+(?:\s*,\s*\d+)*\]", "", cleaned)
+
+    # Collapse 3+ newlines to 2
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
 
 
 class AutomationService:
@@ -92,10 +107,11 @@ class AutomationService:
             target_audio_str = str(final_audio_path.resolve())
 
         # 3. Concurrently await NotebookLM summary and hashtags
-        summary, hashtags = await asyncio.gather(
+        raw_summary, hashtags = await asyncio.gather(
             self._notebooklm_repo.generate_summary(target_audio_str),
             self._notebooklm_repo.generate_hashtags(target_audio_str),
         )
+        summary = clean_summary(raw_summary)
 
         # 4. Save summary as v1_auto.md via FileRepo
         self._file_repo.save_text_version(summary, "v1_auto.md", str(project_dir))

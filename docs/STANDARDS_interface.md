@@ -50,11 +50,12 @@
 | Phase 1 Execution | Chained Event | `phase1_btn.click(...).then(...)` | `on_start_notebooklm` runs first and renders summary + hashtags; `.then()` auto-triggers `on_generate_infographics` displaying loading state on gallery without human intervention |
 | NotebookLM Auth | `gr.Markdown` & `gr.Button` | "Login to NotebookLM" | Displays live auth status via `on_check_auth_status`; button triggers `on_notebooklm_login` (browser Playwright flow) and updates status |
 | Wizard Step 2 | `gr.Accordion` | "Step 2: Text Review" (open) | Interactive summary textbox, max-2 hashtag checkbox group, "Save Edited Summary" button |
-| Hashtag Limiting | `gr.CheckboxGroup` | Max 2 items | Selection change handler clamps selected list to length 2 |
-| Edited Text Output | Markdown file | Name: `v2_edited.md` in `project_dir` | Atomic file write dispatched via `FileRepo.save_text_version` |
-| Wizard Step 3 | `gr.Accordion` | "Step 3: Infographic Selection" (open) | `gr.Gallery` for Phase 1 infographics (select 1), "Confirm Infographic" primary button |
+| Hashtag Limiting | `gr.CheckboxGroup` | Max 2 items | Selection change handler clamps selected list to length 2 and recalculates character count via `calculate_character_count` |
+| Character Counter | `gr.Markdown` | `elem_id="summary_char_count"` | Live character count reflecting summary text, selected hashtags, fixed tags (`#IslamicReminder`/`#IslamicShorts`, `#SeekLightWithZuFa`), disclaimer, and newline separators |
+| Video Description Output | Markdown files | `final_video_description.md`, `short_video_description.md` in `project_dir` | "Save Edited Summary" writes both files with respective hashtags (`#IslamicReminder` / `#IslamicShorts`), selected hashtags, common tag, summary, and disclaimer |
+| Wizard Step 3 | `gr.Accordion` | "Step 3: Infographic Selection" (open) | `gr.Gallery` for Phase 1 infographics (select 1, preview enabled for fullscreen), "Confirm Infographic" primary button |
 | Infographic Confirmation | Decoupled Listeners | `confirm_infographic_btn.click(...)` | Button disables upon valid click; triggers 3 independent listeners (`on_create_final_video`, `on_create_short_video`, `on_generate_thumbnails`) showing isolated loading spinners on each component |
-| Wizard Step 4 | `gr.Accordion` | "Step 4: Thumbnail Selection" (open) | `gr.Gallery` for $3 \times (k+1)$ thumbnails (select 1), "Confirm Thumbnail & Create Shorts Thumbnail" primary button |
+| Wizard Step 4 | `gr.Accordion` | "Step 4: Thumbnail Selection" (open) | `gr.Gallery` for $3 \times (k+1)$ thumbnails (select 1, preview enabled for fullscreen), "Confirm Thumbnail & Create Shorts Thumbnail" primary button |
 | Thumbnail Confirmation | `confirm_thumbnail_btn` | Button click | Runs `on_confirm_thumbnail` producing 9:16 shorts thumbnail from user's selected 16:9 thumbnail; disables button after execution |
 | Wizard Step 5 | `gr.Accordion` | "Step 5: Final Outputs" (open) | Multi-column layout with individual status markdown for `final_video_player` (`final_video.mp4`), `shorts_video_player` (`shorts_video_fancy.mp4` / `shorts_video.mp4`), and `shorts_thumb_display` (`shorts_thumbnail.png`) |
 | Settings Inspector | `gr.Tab` | "Settings" | Read-only inspector displaying `BASE_OUTPUT_DIR`, `DEFAULT_N_INFOGRAPHICS`, `SHORTS_BGM_PATH`, `RESOURCES_DIR` |
