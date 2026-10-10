@@ -1,0 +1,9 @@
+gradio
+notebooklm-py
+google-genai
+ffmpeg-python
+pydantic
+python-dotenv
+pydantic-settings
+black
+isort
