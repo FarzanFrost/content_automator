@@ -17,6 +17,7 @@ Objective: Establish baseline project structure, package configuration, and init
   - [ ] Setup `pyproject.toml`
   - [x] Configure `pytest` and linter tooling
   - [x] Implement foundational entities and settings (`ThumbnailConcept`, `ConceptList`, `ProjectState`, `AppSettings`)
+  - [x] Implement class-based repository layer (`FileRepo`, `GoogleDriveRepo`, `NotebookLMRepo`, `GeminiRepo`)
   - [ ] Implement `scripts/bump_version.py`
 
 ---

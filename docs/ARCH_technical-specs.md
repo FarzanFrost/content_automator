@@ -19,7 +19,7 @@
 ### 3-Layer System Boundaries
 1. **Entrypoint / Orchestration**: CLI or batch entry point. Orchestrators dispatch jobs without embedding business rules.
 2. **Processor / Domain Logic**: Content transformations, template rendering, and business calculations.
-3. **Data & Storage**: File I/O, cache storage, output serialization.
+3. **Data & Storage**: File I/O, cache storage, output serialization, and external repository adapters (`FileRepo`, `GoogleDriveRepo`, `NotebookLMRepo`, `GeminiRepo`).
 
 ### State & Storage Registry
 

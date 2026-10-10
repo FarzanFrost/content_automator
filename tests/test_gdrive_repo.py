@@ -19,7 +19,10 @@ class TestGoogleDriveRepo(unittest.TestCase):
 
     def test_extract_file_id_various_urls(self) -> None:
         urls = [
-            ("https://drive.google.com/file/d/1a2b3c4d5e/view?usp=sharing", "1a2b3c4d5e"),
+            (
+                "https://drive.google.com/file/d/1a2b3c4d5e/view?usp=sharing",
+                "1a2b3c4d5e",
+            ),
             ("https://drive.google.com/open?id=xyz789", "xyz789"),
             ("https://drive.google.com/uc?id=abc12345&export=download", "abc12345"),
         ]
@@ -41,7 +44,10 @@ class TestGoogleDriveRepo(unittest.TestCase):
         mock_response.headers = {
             "Content-Disposition": 'attachment; filename="interview_recording.mp3"'
         }
-        mock_response.iter_bytes.return_value = [b"mock-audio-chunk-1", b"mock-audio-chunk-2"]
+        mock_response.iter_bytes.return_value = [
+            b"mock-audio-chunk-1",
+            b"mock-audio-chunk-2",
+        ]
 
         mock_client = MagicMock(spec=httpx.Client)
         mock_client.get.return_value = mock_response
@@ -54,7 +60,9 @@ class TestGoogleDriveRepo(unittest.TestCase):
 
         self.assertTrue(saved_path.exists())
         self.assertEqual(saved_path.name, "interview_recording.mp3")
-        self.assertEqual(saved_path.read_bytes(), b"mock-audio-chunk-1mock-audio-chunk-2")
+        self.assertEqual(
+            saved_path.read_bytes(), b"mock-audio-chunk-1mock-audio-chunk-2"
+        )
 
     def test_download_audio_fallback_filename(self) -> None:
         mock_response = MagicMock()

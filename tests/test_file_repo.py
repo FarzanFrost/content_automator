@@ -47,7 +47,9 @@ class TestFileRepo(unittest.TestCase):
 
         self.assertTrue(file_path.exists())
         self.assertEqual(file_path.name, "v1_auto.md")
-        self.assertEqual(file_path.read_text(encoding="utf-8"), "# Title\nAutomated script")
+        self.assertEqual(
+            file_path.read_text(encoding="utf-8"), "# Title\nAutomated script"
+        )
 
     def test_save_text_version_with_existing_md_extension(self) -> None:
         project_dir_str = self.repo.create_project_env("sample_audio.mp3")
@@ -60,4 +62,6 @@ class TestFileRepo(unittest.TestCase):
 
         self.assertTrue(file_path.exists())
         self.assertEqual(file_path.name, "v2_edited.md")
-        self.assertEqual(file_path.read_text(encoding="utf-8"), "# Title\nEdited script")
+        self.assertEqual(
+            file_path.read_text(encoding="utf-8"), "# Title\nEdited script"
+        )
