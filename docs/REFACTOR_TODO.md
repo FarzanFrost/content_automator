@@ -18,6 +18,7 @@ Objective: Establish baseline project structure, package configuration, and init
   - [x] Configure `pytest` and linter tooling
   - [x] Implement foundational entities and settings (`ThumbnailConcept`, `ConceptList`, `ProjectState`, `AppSettings`)
   - [x] Implement class-based repository layer (`FileRepo`, `GoogleDriveRepo`, `NotebookLMRepo`, `GeminiRepo`)
+  - [x] Implement utility layer (`PromptManager`, `FFmpegWrapper`)
   - [ ] Implement `scripts/bump_version.py`
 
 ---

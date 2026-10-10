@@ -32,6 +32,9 @@
 | `SHORTS_BGM_PATH` | Environment Variable | Global config | Path to background music track for shorts |
 | `BASE_OUTPUT_DIR` | Environment Variable | Global config | Root output directory path for project assets |
 | `ProjectState` | Dataclass Object | Session state | Active Gradio session state across lifecycle |
+| `SHORT_CANVAS_W` | Constant | Video output | Short-form canvas width: 1080 px |
+| `SHORT_CANVAS_H` | Constant | Video output | Short-form canvas height: 1920 px (9:16) |
+| `SHORT_MAX_DURATION` | Constant | Video output | Maximum short-form video duration: 60 s |
 
 ### Data Models & Schemas
 
@@ -51,6 +54,13 @@
 | `NotebookLMRepo` | `app.backend.repositories.notebooklm_repo` | NotebookLM audio source ingestion, summaries, and hashtag generation |
 | `GeminiRepo` | `app.backend.repositories.gemini_repo` | Multimodal Imagen 3 image generation and Gemini 1.5 Pro structured concept parsing |
 
+### Utilities
+
+| Utility | Module | Purpose |
+|---------|--------|---------|
+| `PromptManager` | `app.backend.utils.prompt_manager` | Factory class producing formatted prompt strings for Gemini image and concept generation |
+| `FFmpegWrapper` | `app.backend.utils.ffmpeg_wrapper` | Async wrapper around ffmpeg CLI for final video, 9:16 short video, and short thumbnail rendering |
+
 ---
 
 ## Reference
@@ -65,6 +75,8 @@
 ## Edge Cases
 
 - **Interrupted File Writes**: Write new artifacts to temporary files before atomic rename to avoid corrupted partial outputs.
+- **9:16 Short-Form Scaling**: `FFmpegWrapper` short methods use a two-layer `filter_complex` — blur-fill background scaled to 1080×1920, foreground scaled to 1080 px wide and centered — to avoid black bars on 9:16 canvases sourced from 16:9 thumbnails.
+- **Islamic Compliance in Prompts**: `PromptManager.get_thumbnail_prompt` always appends the directive `avoid generating eyes` regardless of concept content. Do not remove or make this conditional.
 
 ---
 
