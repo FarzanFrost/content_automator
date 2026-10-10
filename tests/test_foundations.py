@@ -59,6 +59,7 @@ class TestProjectState(unittest.TestCase):
         self.assertEqual(state.themes, [])
         self.assertEqual(state.selected_hashtags, [])
         self.assertEqual(state.selected_infographic_path, "")
+        self.assertEqual(state.selected_thumbnail_path, "")
 
     def test_project_state_custom_values(self) -> None:
         state = ProjectState(
@@ -68,6 +69,7 @@ class TestProjectState(unittest.TestCase):
             themes=["finance", "investing"],
             selected_hashtags=["#money", "#crypto"],
             selected_infographic_path="/tmp/project_1/info.png",
+            selected_thumbnail_path="/tmp/project_1/thumb.png",
         )
         self.assertEqual(state.project_dir, "/tmp/project_1")
         self.assertEqual(state.audio_path, "/tmp/project_1/audio.mp3")
@@ -75,6 +77,7 @@ class TestProjectState(unittest.TestCase):
         self.assertEqual(state.themes, ["finance", "investing"])
         self.assertEqual(state.selected_hashtags, ["#money", "#crypto"])
         self.assertEqual(state.selected_infographic_path, "/tmp/project_1/info.png")
+        self.assertEqual(state.selected_thumbnail_path, "/tmp/project_1/thumb.png")
 
     def test_project_state_reset(self) -> None:
         state = ProjectState(
@@ -84,6 +87,7 @@ class TestProjectState(unittest.TestCase):
             themes=["tech"],
             selected_hashtags=["#ai"],
             selected_infographic_path="/tmp/project_1/info.png",
+            selected_thumbnail_path="/tmp/project_1/thumb.png",
         )
         state.reset()
         self.assertEqual(state.project_dir, "")
@@ -92,6 +96,7 @@ class TestProjectState(unittest.TestCase):
         self.assertEqual(state.themes, [])
         self.assertEqual(state.selected_hashtags, [])
         self.assertEqual(state.selected_infographic_path, "")
+        self.assertEqual(state.selected_thumbnail_path, "")
 
 
 class TestAppSettings(unittest.TestCase):
@@ -101,6 +106,7 @@ class TestAppSettings(unittest.TestCase):
         self.assertIsInstance(settings.GEMINI_API_KEY, str)
         self.assertIsInstance(settings.SHORTS_BGM_PATH, str)
         self.assertIsInstance(settings.BASE_OUTPUT_DIR, str)
+        self.assertEqual(settings.RESOURCES_DIR, "resources")
 
     def test_app_settings_custom_values(self) -> None:
         settings = AppSettings(
@@ -108,11 +114,13 @@ class TestAppSettings(unittest.TestCase):
             DEFAULT_N_INFOGRAPHICS=5,
             SHORTS_BGM_PATH="/path/to/bgm.mp3",
             BASE_OUTPUT_DIR="/path/to/output",
+            RESOURCES_DIR="/custom/resources",
         )
         self.assertEqual(settings.GEMINI_API_KEY, "test_key")
         self.assertEqual(settings.DEFAULT_N_INFOGRAPHICS, 5)
         self.assertEqual(settings.SHORTS_BGM_PATH, "/path/to/bgm.mp3")
         self.assertEqual(settings.BASE_OUTPUT_DIR, "/path/to/output")
+        self.assertEqual(settings.RESOURCES_DIR, "/custom/resources")
 
     def test_app_settings_load(self) -> None:
         settings = AppSettings.load()

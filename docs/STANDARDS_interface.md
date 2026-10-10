@@ -50,7 +50,10 @@
 | Wizard Step 2 | `gr.Accordion` | "Step 2: Text Review" (open) | Interactive summary textbox, max-2 hashtag checkbox group, "Save Edited Summary" button |
 | Hashtag Limiting | `gr.CheckboxGroup` | Max 2 items | Selection change handler clamps selected list to length 2 |
 | Edited Text Output | Markdown file | Name: `v2_edited.md` in `project_dir` | Atomic file write dispatched via `FileRepo.save_text_version` |
-| Settings Inspector | `gr.Tab` | "Settings" | Read-only inspector displaying `BASE_OUTPUT_DIR`, `DEFAULT_N_INFOGRAPHICS`, `SHORTS_BGM_PATH` |
+| Wizard Step 3 | `gr.Accordion` | "Step 3: Infographic Selection" (open) | `gr.Gallery` for Phase 1 infographics (select 1), "Confirm Infographic" primary button |
+| Wizard Step 4 | `gr.Accordion` | "Step 4: Thumbnail Selection" (open) | `gr.Gallery` for $3 \times (k+1)$ thumbnails; single selection updates `selected_thumbnail_path` |
+| Wizard Step 5 | `gr.Accordion` | "Step 5: Final Outputs" (open) | `gr.Video` (`final_video.mp4`), `gr.Video` (`shorts_video_fancy.mp4` / `shorts_video.mp4`), `gr.Image` (`shorts_thumbnail.png`), YouTube upload reminder |
+| Settings Inspector | `gr.Tab` | "Settings" | Read-only inspector displaying `BASE_OUTPUT_DIR`, `DEFAULT_N_INFOGRAPHICS`, `SHORTS_BGM_PATH`, `RESOURCES_DIR` |
 
 ---
 

@@ -31,6 +31,7 @@
 | `DEFAULT_N_INFOGRAPHICS` | Environment Variable | Global config | Default count for infographic generation (default: 3) |
 | `SHORTS_BGM_PATH` | Environment Variable | Global config | Path to background music track for shorts |
 | `BASE_OUTPUT_DIR` | Environment Variable | Global config | Root output directory path for project assets |
+| `RESOURCES_DIR` | Environment Variable | Global config | Directory path for static external project assets (default: `resources`) |
 | `SERVER_NAME` | Environment Variable | Launch config | Gradio host binding address (default: `127.0.0.1`) |
 | `SERVER_PORT` | Environment Variable | Launch config | Gradio host port number (default: `7860`) |
 | `ProjectState` | Dataclass Object | Session state | Active Gradio session state across lifecycle |
@@ -98,6 +99,8 @@
 - **Gradio State Dataclass Serialization**: In `ContentAutomatorUI.build_ui`, `gr.State` must be initialized with an instantiated dataclass (`gr.State(value=ProjectState())`) rather than the dataclass class type to satisfy Gradio's internal `dataclasses.asdict` conversion.
 - **Lazy UI Dependency Resolution**: `ContentAutomatorUI` resolves `AutomationService` and `FileRepo` via lazy property getters rather than direct instantiation in `__init__`, allowing UI construction and inspection without triggering external client authentication during testing or offline environments.
 - **Hashtag Selection Clamping**: `ContentAutomatorUI.on_hashtag_change` clamps user hashtag selections to a strict maximum of 2, updating session state and restoring UI selections immediately upon change.
+- **Static Resource Resolution & Fallback**: In `AutomationService.phase_2_process`, when static asset `shorts_video_fancy.mp4` exists in `RESOURCES_DIR`, it is copied into `project_dir` and returned in the deliverables list; otherwise, the pipeline falls back seamlessly to the generated `shorts_video.mp4`.
+- **Gradio Gallery Event Value Extraction**: In `ContentAutomatorUI._extract_path_from_event`, gallery `.select()` events extract file paths across varying Gradio versions and payload formats (dict with image object, dict with caption, raw string, or tuple list) to ensure robust state synchronization.
 
 ---
 

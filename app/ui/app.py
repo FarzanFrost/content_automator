@@ -41,7 +41,7 @@ class ContentAutomatorUI:
         drive_link: str,
         themes_str: str,
         state: Optional[ProjectState] = None,
-    ) -> Tuple[str, Any, ProjectState, str]:
+    ) -> Tuple[str, Any, List[str], ProjectState, str]:
         """Execute Phase 1 processing and populate review UI components."""
         current_state = state if state is not None else ProjectState()
 
@@ -50,6 +50,7 @@ class ContentAutomatorUI:
             return (
                 "",
                 gr.update(choices=[], value=[]),
+                [],
                 current_state,
                 "Error: Google Drive Link is required.",
             )
@@ -72,6 +73,7 @@ class ContentAutomatorUI:
         return (
             new_state.summary_v1,
             gr.update(choices=hashtag_choices, value=selected_default),
+            placeholders,
             new_state,
             status_msg,
         )
@@ -107,6 +109,92 @@ class ContentAutomatorUI:
         )
         return f"Saved edited summary to {saved_path}", current_state
 
+    def _extract_path_from_event(self, evt: gr.SelectData) -> str:
+        """Extract file path string from a Gradio SelectData event payload."""
+        val = getattr(evt, "value", None)
+        if isinstance(val, dict):
+            img = val.get("image")
+            if isinstance(img, dict):
+                return str(img.get("path") or "")
+            if isinstance(img, str):
+                return img
+            caption = val.get("caption")
+            if caption:
+                return str(caption)
+        elif isinstance(val, str):
+            return val
+        elif isinstance(val, (list, tuple)) and val:
+            return str(val[0])
+        return ""
+
+    def on_select_infographic(
+        self,
+        evt: gr.SelectData,
+        state: Optional[ProjectState] = None,
+    ) -> Tuple[str, ProjectState]:
+        """Handle infographic selection from gallery and update project state."""
+        current_state = state if state is not None else ProjectState()
+        selected_path = self._extract_path_from_event(evt)
+        current_state.selected_infographic_path = selected_path
+        return f"Selected infographic: {selected_path}", current_state
+
+    async def on_confirm_infographic(
+        self,
+        state: Optional[ProjectState] = None,
+    ) -> Tuple[List[str], Optional[str], Optional[str], Optional[str], str, ProjectState]:
+        """Trigger Phase 2 processing and yield thumbnails, final video, shorts, and status."""
+        current_state = state if state is not None else ProjectState()
+
+        if not current_state.selected_infographic_path:
+            return (
+                [],
+                None,
+                None,
+                None,
+                "Error: Please select an infographic before confirming.",
+                current_state,
+            )
+
+        assets = await self.service.phase_2_process(current_state)
+
+        # Assets layout: [*thumbnails, final_video_path, shorts_video_path, shorts_thumb_path]
+        if len(assets) >= 3:
+            thumbnails = assets[:-3]
+            final_video_path = assets[-3]
+            shorts_video_path = assets[-2]
+            shorts_thumb_path = assets[-1]
+        else:
+            thumbnails = []
+            final_video_path = None
+            shorts_video_path = None
+            shorts_thumb_path = None
+
+        status_msg = (
+            f"Phase 2 processing complete. Assets generated in project folder: "
+            f"'{current_state.project_dir}'. All deliverables are ready in your local "
+            f"folder for manual YouTube upload."
+        )
+
+        return (
+            thumbnails,
+            final_video_path,
+            shorts_video_path,
+            shorts_thumb_path,
+            status_msg,
+            current_state,
+        )
+
+    def on_select_thumbnail(
+        self,
+        evt: gr.SelectData,
+        state: Optional[ProjectState] = None,
+    ) -> Tuple[str, ProjectState]:
+        """Handle final thumbnail selection and update project state."""
+        current_state = state if state is not None else ProjectState()
+        selected_path = self._extract_path_from_event(evt)
+        current_state.selected_thumbnail_path = selected_path
+        return f"Selected final thumbnail: {selected_path}", current_state
+
     def build_ui(self) -> gr.Blocks:
         """Construct and bind Gradio Blocks application layout."""
         with gr.Blocks(title="Content Automator") as demo:
@@ -140,16 +228,50 @@ class ContentAutomatorUI:
                         save_summary_btn = gr.Button(
                             "Save Edited Summary", variant="secondary"
                         )
-                        status_markdown = gr.Markdown()
+                        summary_status_markdown = gr.Markdown()
 
+                    with gr.Accordion("Step 3: Infographic Selection", open=True):
+                        infographics_gallery = gr.Gallery(
+                            label="Generated Infographics (Select 1)",
+                            allow_preview=False,
+                            columns=3,
+                        )
+                        confirm_infographic_btn = gr.Button(
+                            "Confirm Infographic", variant="primary"
+                        )
+                        infographic_status_markdown = gr.Markdown()
+
+                    with gr.Accordion("Step 4: Thumbnail Selection", open=True):
+                        thumbnails_gallery = gr.Gallery(
+                            label="Generated Thumbnails (Select 1 Final)",
+                            allow_preview=False,
+                            columns=3,
+                        )
+                        thumbnail_status_markdown = gr.Markdown()
+
+                    with gr.Accordion("Step 5: Final Outputs", open=True):
+                        with gr.Row():
+                            final_video_player = gr.Video(
+                                label="Final Video (16:9)"
+                            )
+                            shorts_video_player = gr.Video(
+                                label="Shorts Video Fancy (9:16)"
+                            )
+                            shorts_thumb_display = gr.Image(
+                                label="Shorts Thumbnail (9:16)"
+                            )
+                        final_outputs_status_markdown = gr.Markdown()
+
+                    # Event bindings
                     phase1_btn.click(
                         fn=self.on_start_phase_1,
                         inputs=[drive_link_input, themes_input, session_state],
                         outputs=[
                             summary_textbox,
                             hashtags_checkbox,
+                            infographics_gallery,
                             session_state,
-                            status_markdown,
+                            summary_status_markdown,
                         ],
                     )
 
@@ -162,7 +284,32 @@ class ContentAutomatorUI:
                     save_summary_btn.click(
                         fn=self.on_save_edited_summary,
                         inputs=[summary_textbox, session_state],
-                        outputs=[status_markdown, session_state],
+                        outputs=[summary_status_markdown, session_state],
+                    )
+
+                    infographics_gallery.select(
+                        fn=self.on_select_infographic,
+                        inputs=[session_state],
+                        outputs=[infographic_status_markdown, session_state],
+                    )
+
+                    confirm_infographic_btn.click(
+                        fn=self.on_confirm_infographic,
+                        inputs=[session_state],
+                        outputs=[
+                            thumbnails_gallery,
+                            final_video_player,
+                            shorts_video_player,
+                            shorts_thumb_display,
+                            final_outputs_status_markdown,
+                            session_state,
+                        ],
+                    )
+
+                    thumbnails_gallery.select(
+                        fn=self.on_select_thumbnail,
+                        inputs=[session_state],
+                        outputs=[thumbnail_status_markdown, session_state],
                     )
 
                 with gr.Tab("Settings"):
@@ -181,6 +328,11 @@ class ContentAutomatorUI:
                     gr.Textbox(
                         label="Shorts BGM Path",
                         value=settings.SHORTS_BGM_PATH,
+                        interactive=False,
+                    )
+                    gr.Textbox(
+                        label="Resources Directory",
+                        value=settings.RESOURCES_DIR,
                         interactive=False,
                     )
 

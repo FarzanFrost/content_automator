@@ -2,6 +2,7 @@
 
 import asyncio
 from pathlib import Path
+import shutil
 from typing import List, Optional, Set, Tuple
 
 from app.backend.config.settings import AppSettings
@@ -27,6 +28,7 @@ class AutomationService:
         prompt_manager: Optional[PromptManager] = None,
         ffmpeg_wrapper: Optional[FFmpegWrapper] = None,
         bgm_path: Optional[str] = None,
+        resources_dir: Optional[str] = None,
     ) -> None:
         """Initialize AutomationService with repository and utility dependencies."""
         self._file_repo = file_repo or FileRepo()
@@ -36,6 +38,7 @@ class AutomationService:
         self._prompt_manager = prompt_manager or PromptManager()
         self._ffmpeg_wrapper = ffmpeg_wrapper or FFmpegWrapper()
         self._bgm_path = bgm_path or AppSettings.load().SHORTS_BGM_PATH
+        self._resources_dir = resources_dir or AppSettings.load().RESOURCES_DIR
         self._background_tasks: Set[asyncio.Task] = set()
 
     async def phase_1_process(
@@ -185,9 +188,16 @@ class AutomationService:
             ),
         )
 
+        fancy_src = Path(self._resources_dir) / "shorts_video_fancy.mp4"
+        effective_shorts_path = shorts_video_path
+        if fancy_src.exists():
+            fancy_dest = project_path / "shorts_video_fancy.mp4"
+            shutil.copy2(fancy_src, fancy_dest)
+            effective_shorts_path = str(fancy_dest.resolve())
+
         return [
             *thumbnail_paths,
             final_video_path,
-            shorts_video_path,
+            effective_shorts_path,
             shorts_thumb_path,
         ]

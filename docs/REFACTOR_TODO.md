@@ -20,6 +20,8 @@ Objective: Establish baseline project structure, package configuration, and init
   - [x] Implement class-based repository layer (`FileRepo`, `GoogleDriveRepo`, `NotebookLMRepo`, `GeminiRepo`)
   - [x] Implement utility layer (`PromptManager`, `FFmpegWrapper`)
   - [x] Implement service orchestration layer (`AutomationService`)
+  - [x] Implement class-based Gradio UI steps 1-5 and event handlers (`ContentAutomatorUI`, `run.py`)
+  - [x] Implement static project resources management (`resources/`, `AppSettings.RESOURCES_DIR`)
   - [ ] Implement `scripts/bump_version.py`
 
 ---
