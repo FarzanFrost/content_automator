@@ -281,3 +281,80 @@ class TestAutomationService(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(copied_fancy.exists())
         self.assertEqual(copied_fancy.read_bytes(), b"mock fancy mp4 bytes")
         self.assertIn(str(copied_fancy.resolve()), assets)
+
+    async def test_phase_2_uses_shorts_bgm_dont_delete_when_present(self) -> None:
+        """Verify phase_2 uses shorts_bgm_dont_delete.m4a and renders shorts_video_fancy.mp4."""
+        base_dir = Path(self.temp_dir.name)
+        project_dir = base_dir / "test_project_bgm"
+        project_dir.mkdir(parents=True, exist_ok=True)
+        resources_dir = base_dir / "custom_resources_bgm"
+        resources_dir.mkdir(parents=True, exist_ok=True)
+        bgm_file = resources_dir / "shorts_bgm_dont_delete.m4a"
+        bgm_file.write_bytes(b"mock m4a bytes")
+
+        service = AutomationService(
+            file_repo=self.file_repo,
+            gdrive_repo=self.gdrive_repo,
+            notebooklm_repo=self.notebooklm_repo,
+            gemini_repo=self.gemini_repo,
+            prompt_manager=self.prompt_manager,
+            ffmpeg_wrapper=self.ffmpeg_wrapper,
+            resources_dir=str(resources_dir),
+            bgm_path="",
+        )
+
+        state = ProjectState(
+            project_dir=str(project_dir.resolve()),
+            audio_path=str((project_dir / "audio.mp3").resolve()),
+            summary_v1="Summary",
+            themes=[],
+            selected_infographic_path=str((project_dir / "info.png").resolve()),
+        )
+
+        self.gemini_repo.generate_structured_concepts.return_value = ConceptList(
+            concepts=[]
+        )
+        assets = await service.phase_2_process(state)
+
+        self.ffmpeg_wrapper.create_short_video.assert_called_once_with(
+            str((project_dir / "info.png").resolve()),
+            str(bgm_file.resolve()),
+            str((project_dir / "shorts_video_fancy.mp4").resolve()),
+        )
+        self.assertIn(str((project_dir / "shorts_video_fancy.mp4").resolve()), assets)
+
+    async def test_phase_2_invokes_progress_callback(self) -> None:
+        """Verify phase_2 reports incremental progress to optional progress_callback."""
+        base_dir = Path(self.temp_dir.name)
+        project_dir = base_dir / "test_project_prog"
+        project_dir.mkdir(parents=True, exist_ok=True)
+
+        service = AutomationService(
+            file_repo=self.file_repo,
+            gdrive_repo=self.gdrive_repo,
+            notebooklm_repo=self.notebooklm_repo,
+            gemini_repo=self.gemini_repo,
+            prompt_manager=self.prompt_manager,
+            ffmpeg_wrapper=self.ffmpeg_wrapper,
+        )
+
+        state = ProjectState(
+            project_dir=str(project_dir.resolve()),
+            audio_path=str((project_dir / "audio.mp3").resolve()),
+            summary_v1="Summary",
+            themes=[],
+            selected_infographic_path=str((project_dir / "info.png").resolve()),
+        )
+
+        self.gemini_repo.generate_structured_concepts.return_value = ConceptList(
+            concepts=[]
+        )
+        mock_cb = MagicMock()
+        await service.phase_2_process(state, progress_callback=mock_cb)
+
+        self.assertGreaterEqual(mock_cb.call_count, 3)
+        first_call = mock_cb.call_args_list[0]
+        self.assertIsInstance(first_call[0][0], float)
+        self.assertIsInstance(first_call[0][1], str)
+
+

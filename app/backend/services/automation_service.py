@@ -4,7 +4,7 @@ import asyncio
 import logging
 import shutil
 from pathlib import Path
-from typing import List, Optional, Set, Tuple
+from typing import Any, Callable, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -135,11 +135,16 @@ class AutomationService:
 
         return state, placeholders
 
-    async def phase_2_process(self, state: ProjectState) -> List[str]:
+    async def phase_2_process(
+        self,
+        state: ProjectState,
+        progress_callback: Optional[Callable[[float, str], Any]] = None,
+    ) -> List[str]:
         """Execute Phase 2: concept math, thumbnail generation, and video composition.
 
         Args:
             state: Populated ProjectState with selected infographic path.
+            progress_callback: Optional callback receiving (progress_pct: float, message: str).
 
         Returns:
             List of file paths for all generated assets (thumbnails, video, shorts).
@@ -150,6 +155,11 @@ class AutomationService:
         if not state.selected_infographic_path:
             raise ValueError(
                 "No selected infographic found in project state. Select an infographic before Phase 2."
+            )
+
+        if progress_callback:
+            progress_callback(
+                0.1, "Generating creative thumbnail concepts with Gemini..."
             )
 
         # 1. Concept Math: execute concept generation prompt k+1 times concurrently
@@ -175,6 +185,9 @@ class AutomationService:
         for cl in concept_lists:
             flattened_concepts.extend(cl.concepts)
 
+        if progress_callback:
+            progress_callback(0.3, "Generating thumbnails in parallel with Gemini...")
+
         # 3. Image Math: Concurrently generate thumbnails for every concept
         thumbnails_dir = Path(state.project_dir) / "thumbnails"
         thumbnail_tasks = []
@@ -192,13 +205,30 @@ class AutomationService:
 
         await asyncio.gather(*thumbnail_tasks)
 
+        if progress_callback:
+            progress_callback(
+                0.65, "Rendering final 16:9 video and 9:16 shorts with FFmpeg..."
+            )
+
         # 4. Video Math: Call FFmpegWrapper using selected infographic as visual input
         project_path = Path(state.project_dir)
         final_video_path = str((project_path / "final_video.mp4").resolve())
-        shorts_video_path = str((project_path / "shorts_video.mp4").resolve())
         shorts_thumb_path = str((project_path / "shorts_thumbnail.png").resolve())
 
-        bgm_track = self._bgm_path or state.audio_path
+        resources_dir_path = Path(self._resources_dir)
+        shorts_bgm_file = resources_dir_path / "shorts_bgm_dont_delete.m4a"
+
+        if self._bgm_path:
+            bgm_track = self._bgm_path
+            shorts_video_name = "shorts_video.mp4"
+        elif shorts_bgm_file.exists():
+            bgm_track = str(shorts_bgm_file.resolve())
+            shorts_video_name = "shorts_video_fancy.mp4"
+        else:
+            bgm_track = state.audio_path
+            shorts_video_name = "shorts_video.mp4"
+
+        shorts_video_path = str((project_path / shorts_video_name).resolve())
 
         await asyncio.gather(
             self._ffmpeg_wrapper.create_final_video(
@@ -212,12 +242,15 @@ class AutomationService:
             ),
         )
 
-        fancy_src = Path(self._resources_dir) / "shorts_video_fancy.mp4"
+        fancy_src = resources_dir_path / "shorts_video_fancy.mp4"
         effective_shorts_path = shorts_video_path
         if fancy_src.exists():
             fancy_dest = project_path / "shorts_video_fancy.mp4"
             shutil.copy2(fancy_src, fancy_dest)
             effective_shorts_path = str(fancy_dest.resolve())
+
+        if progress_callback:
+            progress_callback(1.0, "All video deliverables rendered.")
 
         return [
             *thumbnail_paths,

@@ -1,5 +1,7 @@
 """Tests for class-based Gradio UI and event handlers."""
 
+import asyncio
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import gradio as gr
@@ -31,10 +33,12 @@ def test_ui_init_dependency_injection() -> None:
 
 
 def test_build_ui_returns_blocks() -> None:
-    """Verify build_ui constructs and returns a valid gr.Blocks container."""
+    """Verify build_ui constructs valid gr.Blocks with summary_char_count component."""
     ui = ContentAutomatorUI()
     blocks = ui.build_ui()
     assert isinstance(blocks, gr.Blocks)
+    elem_ids = [c.elem_id for c in blocks.blocks.values() if hasattr(c, "elem_id")]
+    assert "summary_char_count" in elem_ids
 
 
 def test_on_hashtag_change_under_max() -> None:
@@ -207,7 +211,9 @@ async def test_on_confirm_infographic_success() -> None:
         await ui.on_confirm_infographic(state)
     )
 
-    mock_service.phase_2_process.assert_awaited_once_with(state)
+    mock_service.phase_2_process.assert_awaited_once()
+    assert mock_service.phase_2_process.call_args[0][0] == state
+    assert "progress_callback" in mock_service.phase_2_process.call_args[1]
     assert gallery_out == [
         "/workspace/output/khutbah/thumbnails/thumbnail_1.png",
         "/workspace/output/khutbah/thumbnails/thumbnail_2.png",
@@ -233,6 +239,84 @@ def test_on_select_thumbnail() -> None:
         "/workspace/output/khutbah/thumbnails/thumbnail_3.png"
     )
     assert "thumbnail_3.png" in msg
+
+
+def test_on_select_infographic_resolves_temp_path_to_project_file(tmp_path: Path) -> None:
+    """Verify on_select_infographic maps Gradio temp cache path to canonical project path."""
+    project_dir = tmp_path / "project"
+    infographics_dir = project_dir / "infographics"
+    infographics_dir.mkdir(parents=True)
+    real_file = infographics_dir / "infographic_1.png"
+    real_file.write_bytes(b"canonical image")
+
+    ui = ContentAutomatorUI()
+    state = ProjectState(project_dir=str(project_dir))
+    mock_event = MagicMock(spec=gr.SelectData)
+    mock_event.value = {
+        "image": {"path": "/tmp/gradio/cache/infographic_1.png"}
+    }
+    mock_event.index = 0
+
+    msg, out_state = ui.on_select_infographic(mock_event, state)
+
+    assert out_state.selected_infographic_path == str(real_file.resolve())
+    assert "infographic_1.png" in msg
+
+
+def test_on_select_thumbnail_resolves_temp_path_to_project_file(tmp_path: Path) -> None:
+    """Verify on_select_thumbnail maps Gradio temp cache path to canonical project path."""
+    project_dir = tmp_path / "project"
+    thumbnails_dir = project_dir / "thumbnails"
+    thumbnails_dir.mkdir(parents=True)
+    real_file = thumbnails_dir / "thumbnail_2.png"
+    real_file.write_bytes(b"canonical thumbnail")
+
+    ui = ContentAutomatorUI()
+    state = ProjectState(project_dir=str(project_dir))
+    mock_event = MagicMock(spec=gr.SelectData)
+    mock_event.value = {
+        "image": {"path": "/tmp/gradio/cache/thumbnail_2.png"}
+    }
+    mock_event.index = 1
+
+    msg, out_state = ui.on_select_thumbnail(mock_event, state)
+
+    assert out_state.selected_thumbnail_path == str(real_file.resolve())
+    assert "thumbnail_2.png" in msg
+
+
+@pytest.mark.anyio
+async def test_on_start_phase_1_awaits_background_tasks() -> None:
+    """Verify on_start_phase_1 awaits any background tasks before returning."""
+    mock_service = MagicMock(spec=AutomationService)
+    task_completed = False
+
+    async def sample_bg_task():
+        nonlocal task_completed
+        await asyncio.sleep(0.01)
+        task_completed = True
+
+    task = asyncio.create_task(sample_bg_task())
+    mock_service._background_tasks = {task}
+
+    return_state = ProjectState(
+        project_dir="/workspace/output/khutbah",
+        audio_path="/workspace/output/khutbah/audio.mp3",
+        summary_v1="Summary",
+        themes=[],
+        selected_hashtags=[],
+    )
+    mock_service.phase_1_process = AsyncMock(
+        return_value=(return_state, ["/workspace/output/khutbah/infographics/infographic_1.png"])
+    )
+    mock_auth = MagicMock()
+    mock_auth.is_authenticated.return_value = True
+
+    ui = ContentAutomatorUI(service=mock_service, auth_service=mock_auth)
+    state = ProjectState()
+
+    await ui.on_start_phase_1("https://drive.google.com/test", "", state)
+    assert task_completed is True
 
 
 def test_on_check_auth_status_authenticated() -> None:
@@ -286,4 +370,13 @@ async def test_on_start_phase_1_unauthenticated_returns_error() -> None:
 
     assert "not authenticated" in status_msg.lower()
     mock_service.phase_1_process.assert_not_called()
+
+
+def test_on_summary_change() -> None:
+    """Verify on_summary_change returns formatted character count string."""
+    ui = ContentAutomatorUI()
+
+    assert ui.on_summary_change("Hello world") == "Character count: 11"
+    assert ui.on_summary_change("") == "Character count: 0"
+    assert ui.on_summary_change(None) == "Character count: 0"
 

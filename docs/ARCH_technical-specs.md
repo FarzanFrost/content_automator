@@ -116,6 +116,12 @@
 - **Gemini Split Client Architecture**: `GeminiRepo` maintains two separate `genai.Client` instances — `_image_client` (keyed by `GEMINI_IMAGE_API_KEY`, model `GEMINI_IMAGE_MODEL`) and `_concepts_client` (keyed by `GEMINI_CONCEPTS_API_KEY`, model `GEMINI_CONCEPTS_MODEL`) — allowing independent quota, project, and model configuration per operation type. Both clients are injectable for testing.
 - **Safe Background Image Generation**: `AutomationService._safe_generate_image` wraps `GeminiRepo.generate_image` in a try/except, logging errors without re-raising, so background task failures never surface as unhandled exceptions in the Gradio event loop.
 - **Gradio Output Path Whitelisting & Placeholders**: `run.py` whitelists `BASE_OUTPUT_DIR` in `demo.launch(allowed_paths=[...])`, and `AutomationService.phase_1_process` writes immediate placeholder PNG files to disk, ensuring Gradio file cache validation passes before async image generation completes.
+- **Phase 1 Background Task Completion**: `ContentAutomatorUI.on_start_phase_1` awaits any pending `service._background_tasks` before returning to Gradio, ensuring completed full-resolution infographics are loaded into `gr.Gallery` without stale/blank caches.
+- **Authoritative Project Path Resolution**: `ContentAutomatorUI.on_select_infographic` and `on_select_thumbnail` resolve selected paths from Gradio's temp cache back to canonical files in `project_dir` (`infographics/` or `thumbnails/`).
+- **Even Dimension Padding in Video Encoding**: `FFmpegWrapper.create_final_video` applies `-vf "pad=ceil(iw/2)*2:ceil(ih/2)*2"` ensuring video dimensions are divisible by 2 for `libx264` + `yuv420p` encoding.
+- **Shorts BGM Autodetection & Fancy Video Rendering**: In `AutomationService.phase_2_process`, if `shorts_bgm_dont_delete.m4a` exists in `RESOURCES_DIR` and no explicit `_bgm_path` is configured, it is selected as the BGM track and rendered via `create_short_video` directly to `shorts_video_fancy.mp4`.
+- **Fast Video Encoding Presets**: `FFmpegWrapper.create_final_video` and `create_short_video` apply `-preset veryfast` alongside `-tune stillimage` to accelerate static image video encoding without quality loss, reducing full-sermon encode durations from ~10 minutes to under ~60 seconds.
+- **Phase 2 Real-Time Progress Tracking**: `ContentAutomatorUI.on_confirm_infographic` wires `gr.Progress` into `AutomationService.phase_2_process`, providing visual feedback across concept generation, parallel thumbnail rendering, and FFmpeg video encoding.
 
 ---
 
