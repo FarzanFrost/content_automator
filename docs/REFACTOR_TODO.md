@@ -26,7 +26,7 @@ Objective: Establish baseline project structure, package configuration, and init
 
 ## 🧊 On Hold / Backlog
 - [x] Implementation of core content pipeline orchestration (`AutomationService`)
-- [ ] UI integration with Gradio lifecycle
+- [x] UI integration with Gradio lifecycle (`ContentAutomatorUI`, `run.py`)
 
 ---
 
