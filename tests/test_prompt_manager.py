@@ -15,9 +15,14 @@ class TestPromptManager(unittest.TestCase):
         prompt = self.manager.get_infographic_prompt(summary="Test sermon summary.")
         self.assertIn("A FRIDAY SERMON SUMMARY", prompt)
 
-    def test_infographic_prompt_contains_ratio_directive(self) -> None:
+    def test_infographic_prompt_contains_creative_and_image_directive(self) -> None:
         prompt = self.manager.get_infographic_prompt(summary="Test sermon summary.")
         self.assertIn("16:9", prompt)
+        self.assertIn(
+            "Create an infographic image for the content summarizing the content in it.",
+            prompt,
+        )
+        self.assertIn("Be Creative.", prompt)
 
     def test_infographic_prompt_contains_summary(self) -> None:
         summary = "The sermon was about gratitude and patience."
@@ -36,7 +41,7 @@ class TestPromptManager(unittest.TestCase):
 
     def test_concept_prompt_contains_three_concepts_directive(self) -> None:
         prompt = self.manager.get_concept_prompt(summary="Intro to Islam.", theme=None)
-        self.assertIn("3 distinct thumbnail concepts", prompt)
+        self.assertIn("three distinct thumbnail concepts", prompt)
 
     def test_concept_prompt_contains_psychological_triggers(self) -> None:
         prompt = self.manager.get_concept_prompt(summary="Intro to Islam.", theme=None)
@@ -88,7 +93,10 @@ class TestPromptManager(unittest.TestCase):
         prompt = self.manager.get_thumbnail_prompt(
             concept=concept, reference_image="ref.jpg"
         )
-        self.assertIn("avoid generating eyes", prompt)
+        self.assertIn(
+            "Also to make the resulting thumbnail islamic, avoid generating eyes",
+            prompt,
+        )
 
     def test_thumbnail_prompt_contains_reference_image_path(self) -> None:
         concept = {"design_directive": "Vivid."}
@@ -110,6 +118,32 @@ class TestPromptManager(unittest.TestCase):
             concept=concept, reference_image="ref.jpg"
         )
         self.assertIsInstance(result, str)
+
+    # --- get_summary_prompt ---
+
+    def test_summary_prompt_exact_content(self) -> None:
+        prompt = self.manager.get_summary_prompt()
+        self.assertIn(
+            "Translate this into English and structure the content in well defined topics.",
+            prompt,
+        )
+
+    def test_summary_prompt_returns_str(self) -> None:
+        self.assertIsInstance(self.manager.get_summary_prompt(), str)
+
+    # --- get_hashtags_prompt ---
+
+    def test_hashtags_prompt_contains_topic_specific_and_youtube(self) -> None:
+        prompt = self.manager.get_hashtags_prompt()
+        self.assertIn("5 to 10 topic-specific hashtags", prompt)
+        self.assertIn("YouTube video", prompt)
+
+    def test_hashtags_prompt_specifies_hashtag_prefix(self) -> None:
+        prompt = self.manager.get_hashtags_prompt()
+        self.assertIn("prefixed with #", prompt)
+
+    def test_hashtags_prompt_returns_str(self) -> None:
+        self.assertIsInstance(self.manager.get_hashtags_prompt(), str)
 
 
 if __name__ == "__main__":

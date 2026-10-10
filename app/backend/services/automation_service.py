@@ -1,8 +1,8 @@
 """Automation service orchestrating repositories and utilities for content automation."""
 
 import asyncio
-from pathlib import Path
 import shutil
+from pathlib import Path
 from typing import List, Optional, Set, Tuple
 
 from app.backend.config.settings import AppSettings
@@ -33,9 +33,12 @@ class AutomationService:
         """Initialize AutomationService with repository and utility dependencies."""
         self._file_repo = file_repo or FileRepo()
         self._gdrive_repo = gdrive_repo or GoogleDriveRepo()
-        self._notebooklm_repo = notebooklm_repo or NotebookLMRepo()
-        self._gemini_repo = gemini_repo or GeminiRepo()
         self._prompt_manager = prompt_manager or PromptManager()
+        self._notebooklm_repo = notebooklm_repo or NotebookLMRepo(
+            prompt_manager=self._prompt_manager
+        )
+        self._gemini_repo = gemini_repo or GeminiRepo()
+
         self._ffmpeg_wrapper = ffmpeg_wrapper or FFmpegWrapper()
         self._bgm_path = bgm_path or AppSettings.load().SHORTS_BGM_PATH
         self._resources_dir = resources_dir or AppSettings.load().RESOURCES_DIR

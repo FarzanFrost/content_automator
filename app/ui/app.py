@@ -141,7 +141,9 @@ class ContentAutomatorUI:
     async def on_confirm_infographic(
         self,
         state: Optional[ProjectState] = None,
-    ) -> Tuple[List[str], Optional[str], Optional[str], Optional[str], str, ProjectState]:
+    ) -> Tuple[
+        List[str], Optional[str], Optional[str], Optional[str], str, ProjectState
+    ]:
         """Trigger Phase 2 processing and yield thumbnails, final video, shorts, and status."""
         current_state = state if state is not None else ProjectState()
 
@@ -251,9 +253,7 @@ class ContentAutomatorUI:
 
                     with gr.Accordion("Step 5: Final Outputs", open=True):
                         with gr.Row():
-                            final_video_player = gr.Video(
-                                label="Final Video (16:9)"
-                            )
+                            final_video_player = gr.Video(label="Final Video (16:9)")
                             shorts_video_player = gr.Video(
                                 label="Shorts Video Fancy (9:16)"
                             )

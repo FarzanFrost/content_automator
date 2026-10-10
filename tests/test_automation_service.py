@@ -237,7 +237,9 @@ class TestAutomationService(unittest.IsolatedAsyncioTestCase):
             selected_infographic_path=str((project_dir / "info.png").resolve()),
         )
 
-        self.gemini_repo.generate_structured_concepts.return_value = ConceptList(concepts=[])
+        self.gemini_repo.generate_structured_concepts.return_value = ConceptList(
+            concepts=[]
+        )
         assets = await service.phase_2_process(state)
 
         copied_fancy = project_dir / "shorts_video_fancy.mp4"

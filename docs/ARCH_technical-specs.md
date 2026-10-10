@@ -74,7 +74,7 @@
 
 | Utility | Module | Purpose |
 |---------|--------|---------|
-| `PromptManager` | `app.backend.utils.prompt_manager` | Factory class producing formatted prompt strings for Gemini image and concept generation |
+| `PromptManager` | `app.backend.utils.prompt_manager` | Factory class producing formatted prompt strings for NotebookLM (summaries, hashtags) and Gemini/Imagen (infographics, concepts, thumbnails) |
 | `FFmpegWrapper` | `app.backend.utils.ffmpeg_wrapper` | Async wrapper around ffmpeg CLI for final video, 9:16 short video, and short thumbnail rendering |
 
 ---
@@ -92,8 +92,10 @@
 
 - **Interrupted File Writes**: Write new artifacts to temporary files before atomic rename to avoid corrupted partial outputs.
 - **9:16 Short-Form Scaling**: `FFmpegWrapper` short methods use a two-layer `filter_complex` — blur-fill background scaled to 1080×1920, foreground scaled to 1080 px wide and centered — to avoid black bars on 9:16 canvases sourced from 16:9 thumbnails.
-- **Islamic Compliance in Prompts**: `PromptManager.get_thumbnail_prompt` always appends the directive `avoid generating eyes` regardless of concept content. Do not remove or make this conditional.
+- **Islamic Compliance in Prompts**: `PromptManager.get_thumbnail_prompt` enforces `Also to make the resulting thumbnail islamic, avoid generating eyes` and styling similarity to reference image. Do not remove or make this conditional.
+- **NotebookLM Prompt Delegation**: `NotebookLMRepo` delegates all audio question synthesis (`get_summary_prompt`, `get_hashtags_prompt`) to `PromptManager`, supporting dependency injection and centralizing prompt mutations.
 - **Non-blocking Background Task GC Prevention**: In `AutomationService.phase_1_process`, spawned background `asyncio` tasks for infographic generation must be retained in an in-memory set (`_background_tasks`) until completion to prevent garbage collection before execution finishes.
+
 - **Phase 2 Prerequisite Validation**: `AutomationService.phase_2_process` requires `ProjectState.selected_infographic_path` to be non-empty before initiating downstream concept, thumbnail, or video rendering. Raises `ValueError` if missing.
 - **Concept & Thumbnail Concurrency**: `AutomationService.phase_2_process` dispatches $k+1$ concept generation prompts concurrently ($1$ base + $k$ themes) and flattens outputs to $3 \times (k+1)$ concepts, generating all thumbnails in parallel before video composition.
 - **Gradio State Dataclass Serialization**: In `ContentAutomatorUI.build_ui`, `gr.State` must be initialized with an instantiated dataclass (`gr.State(value=ProjectState())`) rather than the dataclass class type to satisfy Gradio's internal `dataclasses.asdict` conversion.

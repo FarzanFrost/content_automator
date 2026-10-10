@@ -1,4 +1,4 @@
-﻿"""PromptManager: factory class for structured AI prompt strings."""
+"""PromptManager: factory class for structured AI prompt strings."""
 
 from typing import Optional
 
@@ -7,7 +7,7 @@ class PromptManager:
     """Produces formatted prompt strings for Gemini image and concept generation."""
 
     def get_infographic_prompt(self, summary: str) -> str:
-        """Return an Imagen 3 prompt for a 16:9 sermon infographic.
+        """Return an Imagen 3 prompt for a sermon infographic image.
 
         Args:
             summary: Sermon summary text to embed in the prompt.
@@ -16,10 +16,10 @@ class PromptManager:
             Fully formatted prompt string.
         """
         return (
-            "Create an infographic summarizing this content. "
+            "Create an infographic image for the content summarizing the content in it. "
+            "Be Creative. "
             "16:9 ratio. "
-            "Be creative. "
-            "The title on top MUST be 'A FRIDAY SERMON SUMMARY'.\n\n"
+            "The title on top of the image must be 'A FRIDAY SERMON SUMMARY'.\n\n"
             f"Content:\n{summary}"
         )
 
@@ -34,18 +34,21 @@ class PromptManager:
             Fully formatted prompt string.
         """
         base = (
-            "Act as a Digital Content Strategist. "
-            "Develop 3 distinct thumbnail concepts prioritizing psychological triggers "
-            "that maximize click-through rate for Islamic educational content.\n\n"
-            "For each concept provide:\n"
-            "- Visual Hook: The primary focal element that arrests attention.\n"
-            "- Design Directive: Specific layout, composition, and styling instructions.\n"
-            "- Text Hook: A high-impact text overlay optimized for emotional resonance.\n"
-            "- Color Theory: Palette selection with psychological framing rationale.\n\n"
-            f"Content Summary:\n{summary}"
+            "Act as a Master Digital Content Strategist with 15 years of experience in YouTube viral growth. "
+            "Your task is to develop three distinct thumbnail concepts that prioritize different psychological triggers: "
+            "1) A Curiosity Gap concept, 2) An Emotional Contagion concept, and 3) A Visual Anomaly/Value Comparison concept.\n\n"
+            "For each concept, provide:\n"
+            "The Visual Hook: A one-sentence explanation of what will stop the scroll.\n"
+            "The Design Directive: A detailed 100-word paragraph describing the Subject, Background, Lighting, and Composition.\n"
+            "The Text Hook: 1–3 words of impactful text with font and color recommendations.\n"
+            "The Color Theory: Explain how the palette will stand out in the YouTube feed.\n\n"
+            "Input Data:\n"
+            "Niche: Islamic Videos\n"
+            "Title: A FRIDAY SERMON SUMMARY\n"
+            f"Summary: {summary}"
         )
-        if theme is not None:
-            base += f"\n\nTheme: {theme}"
+        if theme:
+            base += f"\nTheme: {theme}"
         return base
 
     def get_thumbnail_prompt(self, concept: dict, reference_image: str) -> str:
@@ -61,8 +64,27 @@ class PromptManager:
         directive = concept.get("design_directive", "")
         return (
             "Using the Design Directive provided, generate a professional 16:9 YouTube thumbnail. "
-            "To ensure Islamic compliance, avoid generating eyes. "
-            "Match the style of the provided reference image.\n\n"
+            "Also to make the resulting thumbnail islamic, avoid generating eyes, and make thumbnail similar "
+            "to given image while following the below given directive.\n\n"
             f"Design Directive:\n{directive}\n\n"
             f"Reference Image: {reference_image}"
+        )
+
+    def get_summary_prompt(self) -> str:
+        """Return prompt asking NotebookLM to translate into English and structure in topics.
+
+        Returns:
+            Fully formatted prompt string.
+        """
+        return "Translate this into English and structure the content in well defined topics."
+
+    def get_hashtags_prompt(self) -> str:
+        """Return prompt asking NotebookLM for 5 to 10 topic-specific YouTube hashtags.
+
+        Returns:
+            Fully formatted prompt string.
+        """
+        return (
+            "Provide me with 5 to 10 topic-specific hashtags that I can use to upload "
+            "this as a YouTube video. Output each hashtag prefixed with # separated by spaces."
         )
