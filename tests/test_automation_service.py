@@ -208,3 +208,39 @@ class TestAutomationService(unittest.IsolatedAsyncioTestCase):
         self.assertIn(str((project_dir / "final_video.mp4").resolve()), assets)
         self.assertIn(str((project_dir / "shorts_video.mp4").resolve()), assets)
         self.assertIn(str((project_dir / "shorts_thumbnail.png").resolve()), assets)
+
+    async def test_phase_2_copies_fancy_shorts_when_resource_present(self) -> None:
+        """Verify phase_2 copies shorts_video_fancy.mp4 if found in resources_dir."""
+        base_dir = Path(self.temp_dir.name)
+        project_dir = base_dir / "test_project_fancy"
+        project_dir.mkdir(parents=True, exist_ok=True)
+        resources_dir = base_dir / "custom_resources"
+        resources_dir.mkdir(parents=True, exist_ok=True)
+        fancy_file = resources_dir / "shorts_video_fancy.mp4"
+        fancy_file.write_bytes(b"mock fancy mp4 bytes")
+
+        service = AutomationService(
+            file_repo=self.file_repo,
+            gdrive_repo=self.gdrive_repo,
+            notebooklm_repo=self.notebooklm_repo,
+            gemini_repo=self.gemini_repo,
+            prompt_manager=self.prompt_manager,
+            ffmpeg_wrapper=self.ffmpeg_wrapper,
+            resources_dir=str(resources_dir),
+        )
+
+        state = ProjectState(
+            project_dir=str(project_dir.resolve()),
+            audio_path=str((project_dir / "audio.mp3").resolve()),
+            summary_v1="Summary",
+            themes=[],
+            selected_infographic_path=str((project_dir / "info.png").resolve()),
+        )
+
+        self.gemini_repo.generate_structured_concepts.return_value = ConceptList(concepts=[])
+        assets = await service.phase_2_process(state)
+
+        copied_fancy = project_dir / "shorts_video_fancy.mp4"
+        self.assertTrue(copied_fancy.exists())
+        self.assertEqual(copied_fancy.read_bytes(), b"mock fancy mp4 bytes")
+        self.assertIn(str(copied_fancy.resolve()), assets)

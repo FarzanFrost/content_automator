@@ -23,20 +23,25 @@ Automated content generation pipeline for Islamic educational content. Takes a F
 ```
 content_automator/
 ├── app/
-│   └── backend/
-│       ├── config/
-│       │   └── settings.py          # AppSettings — env/config via pydantic-settings
-│       ├── entities/
-│       │   ├── ai_models.py         # ThumbnailConcept, ConceptList (Pydantic)
-│       │   └── project.py           # ProjectState (dataclass, session state)
-│       ├── repositories/
-│       │   ├── file_repo.py         # FileRepo — local filesystem & markdown storage
-│       │   ├── gdrive_repo.py       # GoogleDriveRepo — audio download from Drive
-│       │   ├── gemini_repo.py       # GeminiRepo — Imagen 3 + Gemini 1.5 Pro
-│       │   └── notebooklm_repo.py   # NotebookLMRepo — summary & hashtag generation
-│       └── utils/
-│           ├── prompt_manager.py    # PromptManager — AI prompt factory
-│           └── ffmpeg_wrapper.py    # FFmpegWrapper — async video/image rendering
+│   ├── backend/
+│   │   ├── config/
+│   │   │   └── settings.py          # AppSettings — env/config via pydantic-settings
+│   │   ├── entities/
+│   │   │   ├── ai_models.py         # ThumbnailConcept, ConceptList (Pydantic)
+│   │   │   └── project.py           # ProjectState (dataclass, session state)
+│   │   ├── repositories/
+│   │   │   ├── file_repo.py         # FileRepo — local filesystem & markdown storage
+│   │   │   ├── gdrive_repo.py       # GoogleDriveRepo — audio download from Drive
+│   │   │   ├── gemini_repo.py       # GeminiRepo — Imagen 3 + Gemini 1.5 Pro
+│   │   │   └── notebooklm_repo.py   # NotebookLMRepo — summary & hashtag generation
+│   │   ├── services/
+│   │   │   └── automation_service.py # AutomationService — Phase 1 & 2 orchestrator
+│   │   └── utils/
+│   │       ├── prompt_manager.py    # PromptManager — AI prompt factory
+│   │       └── ffmpeg_wrapper.py    # FFmpegWrapper — async video/image rendering
+│   └── ui/
+│       └── app.py                   # ContentAutomatorUI — 5-step class-based Gradio UI
+├── resources/                       # Static project assets & templates (e.g., shorts_video_fancy.mp4)
 ├── tests/
 │   ├── test_foundations.py          # Entities and settings tests
 │   ├── test_file_repo.py
@@ -44,10 +49,13 @@ content_automator/
 │   ├── test_gemini_repo.py
 │   ├── test_notebooklm_repo.py
 │   ├── test_prompt_manager.py
-│   └── test_ffmpeg_wrapper.py
+│   ├── test_ffmpeg_wrapper.py
+│   ├── test_automation_service.py
+│   └── test_ui_app.py
 ├── docs/                            # Living Docs (source of truth)
 ├── AGENTS.md                        # Session-critical rules & project metadata
 ├── requirements.txt
+├── run.py                           # Gradio application launch entry point
 └── .env                             # Environment variables (not committed)
 ```
 
@@ -75,18 +83,19 @@ GEMINI_API_KEY=your_gemini_api_key
 DEFAULT_N_INFOGRAPHICS=3
 SHORTS_BGM_PATH=/path/to/bgm.mp3
 BASE_OUTPUT_DIR=/path/to/output
+RESOURCES_DIR=resources
 ```
 
 ### 3. Run
 
 ```bash
-python -m src.main
+python run.py
 ```
 
 ### 4. Tests
 
 ```bash
-.venv\Scripts\python.exe -m pytest          # all 47 tests
+.venv\Scripts\python.exe -m pytest          # all 64 tests
 .venv\Scripts\python.exe -m pytest -v       # verbose
 ```
 

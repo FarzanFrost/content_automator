@@ -14,6 +14,7 @@ class ProjectState:
     themes: List[str] = field(default_factory=list)
     selected_hashtags: List[str] = field(default_factory=list)
     selected_infographic_path: str = ""
+    selected_thumbnail_path: str = ""
 
     def reset(self) -> None:
         """Reset state back to initial empty session values."""
@@ -23,3 +24,4 @@ class ProjectState:
         self.themes.clear()
         self.selected_hashtags.clear()
         self.selected_infographic_path = ""
+        self.selected_thumbnail_path = ""

@@ -77,7 +77,7 @@ Code blocks, commit messages, PR descriptions: write normal always.
 - [ ] v0.2.0: Core content automation pipeline and models
   - [x] Repository layer adapters implemented and tested (23 tests passing)
   - [x] Automation service orchestration implemented and tested (50 tests passing)
-  - [x] Class-based Gradio UI and launch entrypoint implemented and tested (58 tests passing)
+  - [x] Class-based Gradio UI and launch entrypoint implemented and tested (64 tests passing)
 
 ## Commands
 - `python -m src.main`: local development.

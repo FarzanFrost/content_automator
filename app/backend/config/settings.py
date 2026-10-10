@@ -29,6 +29,10 @@ class AppSettings(BaseSettings):
         default="",
         description="Root output directory path for project assets",
     )
+    RESOURCES_DIR: str = Field(
+        default="resources",
+        description="Root resources directory path for static assets",
+    )
 
     @classmethod
     def load(cls) -> "AppSettings":
