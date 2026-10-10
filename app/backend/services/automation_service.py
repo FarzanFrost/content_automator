@@ -1,9 +1,12 @@
 """Automation service orchestrating repositories and utilities for content automation."""
 
 import asyncio
+import logging
 import shutil
 from pathlib import Path
 from typing import List, Optional, Set, Tuple
+
+logger = logging.getLogger(__name__)
 
 from app.backend.config.settings import AppSettings
 from app.backend.entities.ai_models import ConceptList, ThumbnailConcept
@@ -43,6 +46,14 @@ class AutomationService:
         self._bgm_path = bgm_path or AppSettings.load().SHORTS_BGM_PATH
         self._resources_dir = resources_dir or AppSettings.load().RESOURCES_DIR
         self._background_tasks: Set[asyncio.Task] = set()
+
+    async def _safe_generate_image(self, prompt: str, out_file: str) -> Optional[str]:
+        """Safely execute image generation, catching and logging errors without unhandled exceptions."""
+        try:
+            return await self._gemini_repo.generate_image(prompt, out_file)
+        except Exception as exc:
+            logger.error("Failed to generate image at %s: %s", out_file, exc)
+            return None
 
     async def phase_1_process(
         self, drive_link: str, themes: List[str], n_infographics: int
@@ -93,13 +104,23 @@ class AutomationService:
         # 5. EARLY EXECUTION: Spawn n_infographics non-blocking tasks via GeminiRepo
         prompt = self._prompt_manager.get_infographic_prompt(summary)
         infographics_dir = project_dir / "infographics"
+        infographics_dir.mkdir(parents=True, exist_ok=True)
         placeholders: List[str] = []
 
+        placeholder_png = (
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+            b"\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00"
+            b"\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+        )
+
         for i in range(1, n_infographics + 1):
-            out_file = str((infographics_dir / f"infographic_{i}.png").resolve())
+            out_path = infographics_dir / f"infographic_{i}.png"
+            if not out_path.exists():
+                out_path.write_bytes(placeholder_png)
+            out_file = str(out_path.resolve())
             placeholders.append(out_file)
             task = asyncio.create_task(
-                self._gemini_repo.generate_image(prompt, out_file)
+                self._safe_generate_image(prompt, out_file)
             )
             self._background_tasks.add(task)
             task.add_done_callback(self._background_tasks.discard)

@@ -16,19 +16,25 @@ class TestGeminiRepo(unittest.IsolatedAsyncioTestCase):
         self.temp_dir.cleanup()
 
     async def test_generate_image_saves_bytes(self) -> None:
-        mock_image = MagicMock()
-        mock_image.image_bytes = b"fake-imagen3-bytes"
+        mock_inline_data = MagicMock()
+        mock_inline_data.data = b"fake-gemini-image-bytes"
 
-        mock_generated = MagicMock()
-        mock_generated.image = mock_image
+        mock_part = MagicMock()
+        mock_part.inline_data = mock_inline_data
+
+        mock_content = MagicMock()
+        mock_content.parts = [mock_part]
+
+        mock_candidate = MagicMock()
+        mock_candidate.content = mock_content
 
         mock_response = MagicMock()
-        mock_response.generated_images = [mock_generated]
+        mock_response.candidates = [mock_candidate]
 
         mock_client = MagicMock()
-        mock_client.aio.models.generate_images = AsyncMock(return_value=mock_response)
+        mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
 
-        repo = GeminiRepo(client=mock_client)
+        repo = GeminiRepo(image_client=mock_client)
         output_file = self.tmp_path / "thumbnails" / "thumb_1.png"
 
         result_path = await repo.generate_image(
@@ -38,12 +44,28 @@ class TestGeminiRepo(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(result_path, str(output_file.resolve()))
         self.assertTrue(output_file.exists())
-        self.assertEqual(output_file.read_bytes(), b"fake-imagen3-bytes")
+        self.assertEqual(output_file.read_bytes(), b"fake-gemini-image-bytes")
 
-        mock_client.aio.models.generate_images.assert_awaited_once_with(
-            model="imagen-3.0-generate-002",
-            prompt="High quality YouTube thumbnail with glowing neon text",
-        )
+        mock_client.aio.models.generate_content.assert_awaited_once()
+        call_kwargs = mock_client.aio.models.generate_content.call_args.kwargs
+        self.assertIsInstance(call_kwargs["model"], str)
+        self.assertEqual(call_kwargs["contents"], "High quality YouTube thumbnail with glowing neon text")
+
+    async def test_generate_image_empty_raises_value_error(self) -> None:
+        mock_response = MagicMock()
+        mock_response.candidates = []
+
+        mock_client = MagicMock()
+        mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
+
+        repo = GeminiRepo(image_client=mock_client)
+        output_file = self.tmp_path / "thumbnails" / "thumb_empty.png"
+
+        with self.assertRaises(ValueError):
+            await repo.generate_image(
+                prompt="Prompt",
+                output_path=str(output_file),
+            )
 
     async def test_generate_structured_concepts_returns_concept_list(self) -> None:
         # Create a mock image file
@@ -65,7 +87,7 @@ class TestGeminiRepo(unittest.IsolatedAsyncioTestCase):
         mock_client = MagicMock()
         mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
 
-        repo = GeminiRepo(client=mock_client)
+        repo = GeminiRepo(concepts_client=mock_client)
 
         result = await repo.generate_structured_concepts(
             prompt="Analyze this visual and generate thumbnail concepts",

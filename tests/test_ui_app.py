@@ -13,7 +13,8 @@ from app.ui.app import ContentAutomatorUI
 
 def test_ui_init_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     """Verify ContentAutomatorUI instantiates default service and repo if not provided."""
-    monkeypatch.setenv("GEMINI_API_KEY", "mock-test-key")
+    monkeypatch.setenv("GEMINI_IMAGE_API_KEY", "mock-test-key")
+    monkeypatch.setenv("GEMINI_CONCEPTS_API_KEY", "mock-test-key")
     ui = ContentAutomatorUI()
     assert isinstance(ui.service, AutomationService)
     assert isinstance(ui.file_repo, FileRepo)

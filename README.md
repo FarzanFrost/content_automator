@@ -7,7 +7,7 @@ Automated content generation pipeline for Islamic educational content. Takes a F
 | Layer | Technology |
 |-------|-----------|
 | Language | Python 3.11+ |
-| AI / Image Generation | Google Gemini 1.5 Pro, Imagen 3 (`google-genai`) |
+| AI / Image Generation | Google Gemini (`google-genai`) — image generation and structured concept extraction |
 | Audio Ingestion | NotebookLM (`notebooklm-py`) |
 | Cloud Storage | Google Drive (`google-api-python-client`) |
 | Video Processing | ffmpeg CLI (`ffmpeg-python`) |
@@ -32,7 +32,7 @@ content_automator/
 │   │   ├── repositories/
 │   │   │   ├── file_repo.py         # FileRepo — local filesystem & markdown storage
 │   │   │   ├── gdrive_repo.py       # GoogleDriveRepo — audio download from Drive
-│   │   │   ├── gemini_repo.py       # GeminiRepo — Imagen 3 + Gemini 1.5 Pro
+│   │   │   ├── gemini_repo.py       # GeminiRepo — Gemini image generation + structured concept extraction
 │   │   │   └── notebooklm_repo.py   # NotebookLMRepo — summary & hashtag generation
 │   │   ├── services/
 │   │   │   ├── automation_service.py # AutomationService — Phase 1 & 2 orchestrator
@@ -81,8 +81,11 @@ source .venv/Scripts/activate
 Copy `.env.example` to `.env` and populate:
 
 ```env
-GEMINI_API_KEY=your_gemini_api_key
-DEFAULT_N_INFOGRAPHICS=3
+GEMINI_IMAGE_API_KEY=your_gemini_image_api_key
+GEMINI_CONCEPTS_API_KEY=your_gemini_concepts_api_key
+GEMINI_IMAGE_MODEL=gemini-2.5-flash-image
+GEMINI_CONCEPTS_MODEL=gemini-2.5-flash
+DEFAULT_N_INFOGRAPHICS=1
 SHORTS_BGM_PATH=/path/to/bgm.mp3
 BASE_OUTPUT_DIR=/path/to/output
 RESOURCES_DIR=resources
@@ -97,7 +100,7 @@ python run.py
 ### 4. Tests
 
 ```bash
-.venv\Scripts\python.exe -m pytest          # all 85 tests
+.venv\Scripts\python.exe -m pytest          # all tests
 .venv\Scripts\python.exe -m pytest -v       # verbose
 ```
 
@@ -129,7 +132,7 @@ Orchestrators dispatch jobs. Domain logic handles transformations. Repositories 
 | `FileRepo` | `repositories.file_repo` | Create project directory structure; save versioned markdown files |
 | `GoogleDriveRepo` | `repositories.gdrive_repo` | Download sermon audio from Google Drive; resolve filenames from headers |
 | `NotebookLMRepo` | `repositories.notebooklm_repo` | Submit audio to NotebookLM; generate summaries and hashtags |
-| `GeminiRepo` | `repositories.gemini_repo` | Generate images via Imagen 3; parse structured concepts via Gemini 1.5 Pro |
+| `GeminiRepo` | `repositories.gemini_repo` | Generate images via Gemini (`_image_client`); parse structured concepts via Gemini (`_concepts_client`) — each with its own API key and model |
 
 ### Services
 
