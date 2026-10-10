@@ -30,6 +30,9 @@ class TestFFmpegWrapper(unittest.IsolatedAsyncioTestCase):
         mock_exec.assert_awaited_once()
         args = mock_exec.call_args[0]
         self.assertIn("output/final.mp4", args)
+        self.assertIn("-c:a", args)
+        idx = args.index("-c:a")
+        self.assertEqual(args[idx + 1], "copy")
 
     @patch("app.backend.utils.ffmpeg_wrapper.asyncio.create_subprocess_exec")
     async def test_create_final_video_raises_on_nonzero_returncode(
@@ -73,6 +76,17 @@ class TestFFmpegWrapper(unittest.IsolatedAsyncioTestCase):
         mock_exec.assert_awaited_once()
         args = mock_exec.call_args[0]
         self.assertIn("output/short.mp4", args)
+        self.assertIn("-vf", args)
+        self.assertNotIn("-filter_complex", args)
+        self.assertNotIn("-stream_loop", args)
+        self.assertNotIn("-t", args)
+        self.assertIn("-c:a", args)
+        idx = args.index("-c:a")
+        self.assertEqual(args[idx + 1], "copy")
+        self.assertIn("-shortest", args)
+        self.assertIn("-pix_fmt", args)
+        self.assertIn("boxblur=20:10", str(args))
+        self.assertIn("force_original_aspect_ratio=decrease", str(args))
 
     @patch("app.backend.utils.ffmpeg_wrapper.asyncio.create_subprocess_exec")
     async def test_create_short_video_raises_on_nonzero_returncode(
@@ -115,6 +129,10 @@ class TestFFmpegWrapper(unittest.IsolatedAsyncioTestCase):
         mock_exec.assert_awaited_once()
         args = mock_exec.call_args[0]
         self.assertIn("output/short_thumb.jpg", args)
+        self.assertIn("-vf", args)
+        self.assertNotIn("-filter_complex", args)
+        self.assertIn("boxblur=20:10", str(args))
+        self.assertIn("force_original_aspect_ratio=decrease", str(args))
 
     @patch("app.backend.utils.ffmpeg_wrapper.asyncio.create_subprocess_exec")
     async def test_create_short_thumbnail_raises_on_nonzero_returncode(

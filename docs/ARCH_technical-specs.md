@@ -91,7 +91,8 @@
 ## Edge Cases
 
 - **Interrupted File Writes**: Write new artifacts to temporary files before atomic rename to avoid corrupted partial outputs.
-- **9:16 Short-Form Scaling**: `FFmpegWrapper` short methods use a two-layer `filter_complex` — blur-fill background scaled to 1080×1920, foreground scaled to 1080 px wide and centered — to avoid black bars on 9:16 canvases sourced from 16:9 thumbnails.
+- **9:16 Short-Form Scaling**: `FFmpegWrapper` short methods use a `-vf` split filtergraph (`split[v1][v2]`) — blur-fill background scaled to 1080×1920 with `boxblur=20:10`, foreground scaled to fit inside 1080×1920 (`force_original_aspect_ratio=decrease`) and centered (`(main_w-overlay_w)/2:(main_h-overlay_h)/2`) — to avoid black bars and distortion on 9:16 canvases sourced from 16:9 thumbnails.
+- **Audio Stream Copy & Pixel Format Compatibility**: `FFmpegWrapper.create_final_video` and `create_short_video` use stream copy (`-c:a copy`) for instant lossless audio integration without re-encoding, paired with `-shortest` and `-pix_fmt yuv420p` to guarantee video playback compatibility across web browsers, mobile players, and QuickTime.
 - **Islamic Compliance in Prompts**: `PromptManager.get_thumbnail_prompt` enforces `Also to make the resulting thumbnail islamic, avoid generating eyes` and styling similarity to reference image. Do not remove or make this conditional.
 - **NotebookLM Prompt Delegation**: `NotebookLMRepo` delegates all audio question synthesis (`get_summary_prompt`, `get_hashtags_prompt`) to `PromptManager`, supporting dependency injection and centralizing prompt mutations.
 - **Non-blocking Background Task GC Prevention**: In `AutomationService.phase_1_process`, spawned background `asyncio` tasks for infographic generation must be retained in an in-memory set (`_background_tasks`) until completion to prevent garbage collection before execution finishes.

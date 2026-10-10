@@ -151,9 +151,9 @@ Orchestrators dispatch jobs. Domain logic handles transformations. Repositories 
 
 | Method | Output |
 |--------|--------|
-| `create_final_video(img, audio, out)` | 16:9 MP4 — static image looped over full audio duration |
-| `create_short_video(img, bgm, out)` | 9:16 MP4 — blur-fill background + centered foreground, BGM, max 60 s |
-| `create_short_thumbnail(img, out)` | 9:16 JPEG/PNG — blur-fill background + centered foreground, single frame |
+| `create_final_video(img, audio, out)` | 16:9 MP4 — static image looped over full audio duration (`-c:a copy`, `yuv420p`) |
+| `create_short_video(img, bgm, out)` | 9:16 MP4 — blur-fill background (`boxblur=20:10`) + centered foreground, BGM stream copy (`-c:a copy`, `-shortest`) |
+| `create_short_thumbnail(img, out)` | 9:16 JPEG/PNG — blur-fill background (`boxblur=20:10`) + centered foreground, single frame |
 
 ---
 
