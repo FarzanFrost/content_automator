@@ -125,6 +125,9 @@
 - **Chained Phase 1 Execution**: In `ContentAutomatorUI.build_ui`, `phase1_btn.click` triggers `on_start_notebooklm` and chains via `.then(...)` to `on_generate_infographics`. NotebookLM summary and hashtags display first, while Gemini infographic generation runs automatically without user intervention and displays loading on the gallery.
 - **Isolated Parallel Media Rendering**: `confirm_infographic_btn` disables immediately upon click (`gr.update(interactive=False)`) and attaches 3 concurrent event listeners (`on_create_final_video`, `on_create_short_video`, `on_generate_thumbnails`). Each output UI block displays its own isolated loading spinner.
 - **Selected 16:9 Thumbnail for Short Thumbnail**: `create_short_thumbnail` strictly targets `state.selected_thumbnail_path` (16:9 thumbnail selected in Step 4 and confirmed via `confirm_thumbnail_btn`), preventing aspect-ratio distortions and errors from using infographics.
+- **Summary Sanitization**: `clean_summary` in `automation_service` strips markdown formatting (`#`, `*`, `---`), inline citations (`[1]`, `[1, 2]`), and collapses 3+ consecutive newlines to 2 before persisting `v1_auto.md`. Runs on raw NotebookLM output before state and file storage.
+- **Infographic 16:9 Aspect Ratio**: `PromptManager.get_infographic_prompt` includes `(16:9 ratio)` directive in the Gemini image generation prompt, ensuring generated infographics match the video frame aspect ratio.
+- **Dual Video Description Files**: `ContentAutomatorUI.on_save_edited_summary` writes `final_video_description.md` (with `#IslamicReminder`) and `short_video_description.md` (with `#IslamicShorts`), each containing audio filename, hashtags, common tag, summary, and disclaimer. Replaces legacy single `v2_edited.md` output.
 
 ---
 

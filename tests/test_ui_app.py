@@ -33,34 +33,44 @@ def test_ui_init_dependency_injection() -> None:
 
 
 def test_build_ui_returns_blocks() -> None:
-    """Verify build_ui constructs valid gr.Blocks with summary_char_count component."""
+    """Verify build_ui constructs valid gr.Blocks with summary_char_count component and preview-enabled galleries."""
     ui = ContentAutomatorUI()
     blocks = ui.build_ui()
     assert isinstance(blocks, gr.Blocks)
     elem_ids = [c.elem_id for c in blocks.blocks.values() if hasattr(c, "elem_id")]
     assert "summary_char_count" in elem_ids
+    galleries = [c for c in blocks.blocks.values() if isinstance(c, gr.Gallery)]
+    assert len(galleries) >= 2
+    assert all(g.allow_preview is True for g in galleries)
 
 
 def test_on_hashtag_change_under_max() -> None:
-    """Verify selecting 2 or fewer hashtags preserves user selection in state."""
+    """Verify selecting 2 or fewer hashtags preserves user selection in state and updates char count."""
     ui = ContentAutomatorUI()
     state = ProjectState()
 
-    update, updated_state = ui.on_hashtag_change(["#one", "#two"], state)
+    update, updated_state, count_str = ui.on_hashtag_change(
+        ["#one", "#two"], "Hello", state
+    )
 
     assert updated_state.selected_hashtags == ["#one", "#two"]
     assert update["value"] == ["#one", "#two"]
+    # 5 (Hello) + 4 (#one) + 4 (#two) + 16 + 18 + 84 + 7 = 138
+    assert count_str == "Character count: 138"
 
 
 def test_on_hashtag_change_exceeds_max() -> None:
-    """Verify selecting more than 2 hashtags restricts selection to max of 2."""
+    """Verify selecting more than 2 hashtags restricts selection to max of 2 and updates char count."""
     ui = ContentAutomatorUI()
     state = ProjectState()
 
-    update, updated_state = ui.on_hashtag_change(["#one", "#two", "#three"], state)
+    update, updated_state, count_str = ui.on_hashtag_change(
+        ["#one", "#two", "#three"], "Hello", state
+    )
 
     assert updated_state.selected_hashtags == ["#one", "#two"]
     assert update["value"] == ["#one", "#two"]
+    assert count_str == "Character count: 138"
 
 
 @pytest.mark.anyio
@@ -108,22 +118,71 @@ async def test_on_start_phase_1() -> None:
 
 
 def test_on_save_edited_summary_success() -> None:
-    """Verify saving edited summary delegates to file_repo with v2_edited.md."""
+    """Verify saving edited summary delegates to file_repo with final and short video description markdown files."""
     mock_file_repo = MagicMock(spec=FileRepo)
-    mock_file_repo.save_text_version.return_value = (
-        "/workspace/output/khutbah/v2_edited.md"
-    )
-
     ui = ContentAutomatorUI(file_repo=mock_file_repo)
-    state = ProjectState(project_dir="/workspace/output/khutbah")
+    state = ProjectState(
+        project_dir="/workspace/output/khutbah",
+        audio_path="/workspace/output/khutbah/khutbah.mp3",
+        selected_hashtags=["#Peace", "#Charity"],
+    )
 
     status, out_state = ui.on_save_edited_summary("Revised Khutbah Summary", state)
 
-    mock_file_repo.save_text_version.assert_called_once_with(
-        "Revised Khutbah Summary", "v2_edited.md", "/workspace/output/khutbah"
+    expected_final = (
+        "khutbah.mp3\n"
+        "#IslamicReminder\n"
+        "#Peace\n"
+        "#Charity\n"
+        "#SeekLightWithZuFa\n\n"
+        "Revised Khutbah Summary\n\n"
+        "Disclaimer: AI-assisted English summary and infographics. Minor errors are possible."
     )
-    assert "/workspace/output/khutbah/v2_edited.md" in status
+    expected_short = (
+        "khutbah.mp3\n"
+        "#IslamicShorts\n"
+        "#Peace\n"
+        "#Charity\n"
+        "#SeekLightWithZuFa\n\n"
+        "Revised Khutbah Summary\n\n"
+        "Disclaimer: AI-assisted English summary and infographics. Minor errors are possible."
+    )
+
+    assert mock_file_repo.save_text_version.call_count == 2
+    mock_file_repo.save_text_version.assert_any_call(
+        expected_final, "final_video_description.md", "/workspace/output/khutbah"
+    )
+    mock_file_repo.save_text_version.assert_any_call(
+        expected_short, "short_video_description.md", "/workspace/output/khutbah"
+    )
+    assert "Saved" in status
     assert out_state is state
+
+
+def test_on_save_edited_summary_single_hashtag() -> None:
+    """Verify saving edited summary with single hashtag retains blank line for second hashtag."""
+    mock_file_repo = MagicMock(spec=FileRepo)
+    ui = ContentAutomatorUI(file_repo=mock_file_repo)
+    state = ProjectState(
+        project_dir="/workspace/output/khutbah",
+        audio_path="/workspace/output/khutbah/khutbah.mp3",
+        selected_hashtags=["#Peace"],
+    )
+
+    status, out_state = ui.on_save_edited_summary("Revised Khutbah Summary", state)
+
+    expected_final = (
+        "khutbah.mp3\n"
+        "#IslamicReminder\n"
+        "#Peace\n"
+        "\n"
+        "#SeekLightWithZuFa\n\n"
+        "Revised Khutbah Summary\n\n"
+        "Disclaimer: AI-assisted English summary and infographics. Minor errors are possible."
+    )
+    mock_file_repo.save_text_version.assert_any_call(
+        expected_final, "final_video_description.md", "/workspace/output/khutbah"
+    )
 
 
 def test_on_save_edited_summary_missing_project_dir() -> None:
@@ -373,12 +432,19 @@ async def test_on_start_phase_1_unauthenticated_returns_error() -> None:
 
 
 def test_on_summary_change() -> None:
-    """Verify on_summary_change returns formatted character count string."""
+    """Verify on_summary_change returns formatted character count string based on summary, hashtags, and metadata."""
     ui = ContentAutomatorUI()
 
-    assert ui.on_summary_change("Hello world") == "Character count: 11"
-    assert ui.on_summary_change("") == "Character count: 0"
-    assert ui.on_summary_change(None) == "Character count: 0"
+    # Base without tags = len("") + 16 + 18 + 84 + 7 = 125
+    assert ui.on_summary_change("", []) == "Character count: 125"
+    assert ui.on_summary_change(None, None) == "Character count: 125"
+    # Hello world (11) + 125 = 136
+    assert ui.on_summary_change("Hello world", []) == "Character count: 136"
+    # Hello world (11) + #tag1 (5) + #tag2 (5) + 125 = 146
+    assert (
+        ui.on_summary_change("Hello world", ["#tag1", "#tag2"])
+        == "Character count: 146"
+    )
 
 
 @pytest.mark.anyio

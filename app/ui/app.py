@@ -11,6 +11,36 @@ from app.backend.services.automation_service import AutomationService
 from app.backend.services.notebooklm_auth_service import NotebookLMAuthService
 
 
+FINAL_VIDEO_HASHTAG = "#IslamicReminder"
+SHORT_VIDEO_HASHTAG = "#IslamicShorts"
+COMMON_HASHTAG = "#SeekLightWithZuFa"
+DISCLAIMER = (
+    "Disclaimer: AI-assisted English summary and infographics. Minor errors are possible."
+)
+DESCRIPTION_NEWLINES_COUNT = 7
+
+
+def calculate_character_count(
+    summary: Optional[str] = None,
+    hashtags: Optional[List[str]] = None,
+) -> int:
+    """Calculate character count including summary, hashtags, common tags, disclaimer, and newlines."""
+    summary_len = len(summary) if summary is not None else 0
+    tag_list = hashtags or []
+    tag1_len = len(tag_list[0]) if len(tag_list) > 0 else 0
+    tag2_len = len(tag_list[1]) if len(tag_list) > 1 else 0
+    max_tag_len = max(len(FINAL_VIDEO_HASHTAG), len(SHORT_VIDEO_HASHTAG))
+    return (
+        summary_len
+        + tag1_len
+        + tag2_len
+        + max_tag_len
+        + len(COMMON_HASHTAG)
+        + len(DISCLAIMER)
+        + DESCRIPTION_NEWLINES_COUNT
+    )
+
+
 class ContentAutomatorUI:
     """Class-based Gradio interface orchestrating content automation workflows."""
 
@@ -235,9 +265,13 @@ class ContentAutomatorUI:
     def on_hashtag_change(
         self,
         selected: Optional[List[str]],
+        summary_text: Optional[Any] = None,
         state: Optional[ProjectState] = None,
-    ) -> Tuple[Any, ProjectState]:
-        """Enforce maximum of 2 hashtag selections."""
+    ) -> Tuple[Any, ProjectState, str]:
+        """Enforce maximum of 2 hashtag selections and recalculate character count."""
+        if isinstance(summary_text, ProjectState):
+            state = summary_text
+            summary_text = ""
         current_state = state if state is not None else ProjectState()
         selected_list = selected or []
 
@@ -245,11 +279,19 @@ class ContentAutomatorUI:
             selected_list = selected_list[:2]
 
         current_state.selected_hashtags = list(selected_list)
-        return gr.update(value=selected_list), current_state
+        count_str = self.on_summary_change(
+            str(summary_text) if summary_text is not None else "",
+            current_state.selected_hashtags,
+        )
+        return gr.update(value=selected_list), current_state, count_str
 
-    def on_summary_change(self, text: Optional[str] = None) -> str:
-        """Return formatted character count string for summary text."""
-        count = len(text) if text is not None else 0
+    def on_summary_change(
+        self,
+        text: Optional[str] = None,
+        hashtags: Optional[List[str]] = None,
+    ) -> str:
+        """Return formatted character count string for summary and selected hashtags."""
+        count = calculate_character_count(text, hashtags)
         return f"Character count: {count}"
 
     def on_save_edited_summary(
@@ -257,16 +299,50 @@ class ContentAutomatorUI:
         summary_text: str,
         state: Optional[ProjectState] = None,
     ) -> Tuple[str, ProjectState]:
-        """Save edited summary markdown version v2_edited.md into project directory."""
+        """Save edited summary markdown versions into project directory."""
         current_state = state if state is not None else ProjectState()
 
         if not current_state.project_dir:
             return "Error: No active project directory found.", current_state
 
-        saved_path = self.file_repo.save_text_version(
-            summary_text, "v2_edited.md", current_state.project_dir
+        filename = (
+            Path(current_state.audio_path).name if current_state.audio_path else ""
         )
-        return f"Saved edited summary to {saved_path}", current_state
+        selected_tags = current_state.selected_hashtags or []
+        tag1 = selected_tags[0] if len(selected_tags) > 0 else ""
+        tag2 = selected_tags[1] if len(selected_tags) > 1 else ""
+
+        final_desc = (
+            f"{filename}\n"
+            f"{FINAL_VIDEO_HASHTAG}\n"
+            f"{tag1}\n"
+            f"{tag2}\n"
+            f"{COMMON_HASHTAG}\n\n"
+            f"{summary_text}\n\n"
+            f"{DISCLAIMER}"
+        )
+
+        short_desc = (
+            f"{filename}\n"
+            f"{SHORT_VIDEO_HASHTAG}\n"
+            f"{tag1}\n"
+            f"{tag2}\n"
+            f"{COMMON_HASHTAG}\n\n"
+            f"{summary_text}\n\n"
+            f"{DISCLAIMER}"
+        )
+
+        self.file_repo.save_text_version(
+            final_desc, "final_video_description.md", current_state.project_dir
+        )
+        self.file_repo.save_text_version(
+            short_desc, "short_video_description.md", current_state.project_dir
+        )
+
+        return (
+            f"Saved final and short video descriptions to {current_state.project_dir}",
+            current_state,
+        )
 
     def _extract_path_from_event(self, evt: gr.SelectData) -> str:
         """Extract file path string from a Gradio SelectData event payload."""
@@ -450,7 +526,7 @@ class ContentAutomatorUI:
                     with gr.Accordion("Step 3: Infographic Selection", open=True):
                         infographics_gallery = gr.Gallery(
                             label="Generated Infographics (Select 1)",
-                            allow_preview=False,
+                            allow_preview=True,
                             columns=3,
                         )
                         confirm_infographic_btn = gr.Button(
@@ -461,7 +537,7 @@ class ContentAutomatorUI:
                     with gr.Accordion("Step 4: Thumbnail Selection", open=True):
                         thumbnails_gallery = gr.Gallery(
                             label="Generated Thumbnails (Select 1 Final)",
-                            allow_preview=False,
+                            allow_preview=True,
                             columns=3,
                         )
                         confirm_thumbnail_btn = gr.Button(
@@ -507,14 +583,14 @@ class ContentAutomatorUI:
 
                     summary_textbox.change(
                         fn=self.on_summary_change,
-                        inputs=[summary_textbox],
+                        inputs=[summary_textbox, hashtags_checkbox],
                         outputs=[summary_char_count],
                     )
 
                     hashtags_checkbox.change(
                         fn=self.on_hashtag_change,
-                        inputs=[hashtags_checkbox, session_state],
-                        outputs=[hashtags_checkbox, session_state],
+                        inputs=[hashtags_checkbox, summary_textbox, session_state],
+                        outputs=[hashtags_checkbox, session_state, summary_char_count],
                     )
 
                     save_summary_btn.click(

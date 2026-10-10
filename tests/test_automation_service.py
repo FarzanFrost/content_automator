@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from app.backend.entities.ai_models import ConceptList, ThumbnailConcept
 from app.backend.entities.project import ProjectState
-from app.backend.services.automation_service import AutomationService
+from app.backend.services.automation_service import AutomationService, clean_summary
 
 
 class TestAutomationService(unittest.IsolatedAsyncioTestCase):
@@ -491,6 +491,70 @@ class TestAutomationService(unittest.IsolatedAsyncioTestCase):
         )
         with self.assertRaises(ValueError):
             await service.create_short_thumbnail(state)
+
+    def test_clean_summary_removes_markdown_and_citations(self) -> None:
+        """Verify clean_summary strips markdown symbols, citations, leading whitespace, and excess newlines."""
+        raw_summary = (
+            "### Section Title\n\n"
+            "* Point 1 with **bold** text [1, 2].\n"
+            "--- \n"
+            "Point 2 with citation [3].\n\n\n\n"
+            "Final conclusion."
+        )
+        expected = (
+            "Section Title\n\n"
+            " Point 1 with bold text .\n"
+            " \n"
+            "Point 2 with citation .\n\n"
+            "Final conclusion."
+        )
+        self.assertEqual(clean_summary(raw_summary), expected)
+
+    def test_clean_summary_handles_empty_or_none(self) -> None:
+        """Verify clean_summary handles empty or None input gracefully."""
+        self.assertEqual(clean_summary(""), "")
+        self.assertEqual(clean_summary(None), "")
+        self.assertEqual(clean_summary("   \n\n  "), "")
+
+    async def test_generate_notebooklm_artifacts_cleans_summary(self) -> None:
+        """Verify generate_notebooklm_artifacts cleans the raw summary before persisting and setting state."""
+        test_audio = self.tmp_path / "audio_dirty.mp3"
+        test_audio.write_text("audio")
+        self.gdrive_repo.download_audio.return_value = str(test_audio)
+        project_dir = self.tmp_path / "project_dirty"
+        self.file_repo.create_project_env.return_value = str(project_dir)
+
+        dirty_summary = (
+            "## Friday Sermon Summary\n\n"
+            "* The importance of patience [1] and gratitude [2, 3].\n"
+            "---\n\n\n"
+            "Always seek guidance."
+        )
+        self.notebooklm_repo.generate_summary = AsyncMock(return_value=dirty_summary)
+
+        service = AutomationService(
+            file_repo=self.file_repo,
+            gdrive_repo=self.gdrive_repo,
+            notebooklm_repo=self.notebooklm_repo,
+            gemini_repo=self.gemini_repo,
+            prompt_manager=self.prompt_manager,
+            ffmpeg_wrapper=self.ffmpeg_wrapper,
+        )
+
+        state = await service.generate_notebooklm_artifacts(
+            drive_link="https://drive.google.com/file/d/dirty/view",
+            themes=["Theme1"],
+        )
+
+        expected_clean = (
+            "Friday Sermon Summary\n\n"
+            " The importance of patience  and gratitude .\n\n"
+            "Always seek guidance."
+        )
+        self.assertEqual(state.summary_v1, expected_clean)
+        self.file_repo.save_text_version.assert_called_once_with(
+            expected_clean, "v1_auto.md", str(project_dir)
+        )
 
 
 

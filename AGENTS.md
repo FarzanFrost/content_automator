@@ -82,6 +82,7 @@ Code blocks, commit messages, PR descriptions: write normal always.
   - [x] NotebookLM async context lifecycle and browser auth service implemented (85 tests passing)
   - [x] Gemini Developer API integration, split clients (image vs concepts), and safe background tasks (87 tests passing)
   - [x] Decoupled Phase 1/Phase 2 UI workflow with chained infographic generation and isolated loading states (107 tests passing)
+  - [x] Gallery fullscreen preview, summary sanitization, 16:9 infographic prompt, and dual video descriptions (111 tests passing)
 
 
 ## Commands

@@ -16,7 +16,7 @@ class PromptManager:
             Fully formatted prompt string.
         """
         return (
-            "Create an infographic image for the content summarizing the content in it. "
+            "Create an infographic image (16:9 ratio) for the content summarizing the content in it. "
             "Be Creative. "
             "The title on top of the image must be 'A FRIDAY SERMON SUMMARY'.\n\n"
             f"Content:\n{summary}"

@@ -18,7 +18,7 @@ class TestPromptManager(unittest.TestCase):
     def test_infographic_prompt_contains_creative_and_image_directive(self) -> None:
         prompt = self.manager.get_infographic_prompt(summary="Test sermon summary.")
         self.assertIn(
-            "Create an infographic image for the content summarizing the content in it.",
+            "Create an infographic image (16:9 ratio) for the content summarizing the content in it.",
             prompt,
         )
         self.assertIn("Be Creative.", prompt)
