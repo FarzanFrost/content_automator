@@ -47,6 +47,7 @@
 | Root Application | `gr.Blocks` | `title="Content Automator"` | Houses session `gr.State(value=ProjectState())` |
 | Primary Navigation | `gr.Tabs` | "Jummah Automation", "Settings" | Top-level workflow navigation |
 | Wizard Step 1 | `gr.Accordion` | "Step 1: Init" (open) | Drive URL input, Themes input, "Start Phase 1 Processing" primary button |
+| NotebookLM Auth | `gr.Markdown` & `gr.Button` | "Login to NotebookLM" | Displays live auth status via `on_check_auth_status`; button triggers `on_notebooklm_login` (browser Playwright flow) and updates status |
 | Wizard Step 2 | `gr.Accordion` | "Step 2: Text Review" (open) | Interactive summary textbox, max-2 hashtag checkbox group, "Save Edited Summary" button |
 | Hashtag Limiting | `gr.CheckboxGroup` | Max 2 items | Selection change handler clamps selected list to length 2 |
 | Edited Text Output | Markdown file | Name: `v2_edited.md` in `project_dir` | Atomic file write dispatched via `FileRepo.save_text_version` |

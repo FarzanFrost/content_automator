@@ -8,6 +8,7 @@ from app.backend.config.settings import AppSettings
 from app.backend.entities.project import ProjectState
 from app.backend.repositories.file_repo import FileRepo
 from app.backend.services.automation_service import AutomationService
+from app.backend.services.notebooklm_auth_service import NotebookLMAuthService
 
 
 class ContentAutomatorUI:
@@ -17,10 +18,12 @@ class ContentAutomatorUI:
         self,
         service: Optional[AutomationService] = None,
         file_repo: Optional[FileRepo] = None,
+        auth_service: Optional[NotebookLMAuthService] = None,
     ) -> None:
         """Initialize ContentAutomatorUI with service and repository dependencies."""
         self._service = service
         self._file_repo = file_repo
+        self._auth_service = auth_service
 
     @property
     def service(self) -> AutomationService:
@@ -35,6 +38,13 @@ class ContentAutomatorUI:
         if self._file_repo is None:
             self._file_repo = FileRepo()
         return self._file_repo
+
+    @property
+    def auth_service(self) -> NotebookLMAuthService:
+        """Return injected or lazy-initialized NotebookLMAuthService instance."""
+        if self._auth_service is None:
+            self._auth_service = NotebookLMAuthService()
+        return self._auth_service
 
     async def on_start_phase_1(
         self,
@@ -53,6 +63,15 @@ class ContentAutomatorUI:
                 [],
                 current_state,
                 "Error: Google Drive Link is required.",
+            )
+
+        if not self.auth_service.is_authenticated():
+            return (
+                "",
+                gr.update(choices=[], value=[]),
+                [],
+                current_state,
+                "Error: NotebookLM is not authenticated. Please click 'Login to NotebookLM' below to connect your Google account.",
             )
 
         themes = [t.strip() for t in themes_str.split(",") if t.strip()]
@@ -197,6 +216,16 @@ class ContentAutomatorUI:
         current_state.selected_thumbnail_path = selected_path
         return f"Selected final thumbnail: {selected_path}", current_state
 
+    def on_check_auth_status(self) -> str:
+        """Return a human-readable NotebookLM authentication status string."""
+        if self.auth_service.is_authenticated():
+            return "✅ Authenticated — NotebookLM is connected."
+        return "❌ Not authenticated — click 'Login to NotebookLM' to connect."
+
+    async def on_notebooklm_login(self) -> str:
+        """Trigger browser-based NotebookLM login and return result status."""
+        return await self.auth_service.login()
+
     def build_ui(self) -> gr.Blocks:
         """Construct and bind Gradio Blocks application layout."""
         with gr.Blocks(title="Content Automator") as demo:
@@ -334,6 +363,26 @@ class ContentAutomatorUI:
                         label="Resources Directory",
                         value=settings.RESOURCES_DIR,
                         interactive=False,
+                    )
+
+                    gr.Markdown("---")
+                    gr.Markdown("### NotebookLM Authentication")
+                    gr.Markdown(
+                        "Login once with your Google account. "
+                        "Credentials are saved locally and reused across sessions."
+                    )
+                    auth_status_markdown = gr.Markdown(
+                        value=self.on_check_auth_status()
+                    )
+                    notebooklm_login_btn = gr.Button(
+                        "Login to NotebookLM",
+                        variant="primary",
+                        elem_id="notebooklm_login_btn",
+                    )
+                    notebooklm_login_btn.click(
+                        fn=self.on_notebooklm_login,
+                        inputs=[],
+                        outputs=[auth_status_markdown],
                     )
 
         return demo

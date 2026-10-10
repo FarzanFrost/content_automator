@@ -35,7 +35,8 @@ content_automator/
 │   │   │   ├── gemini_repo.py       # GeminiRepo — Imagen 3 + Gemini 1.5 Pro
 │   │   │   └── notebooklm_repo.py   # NotebookLMRepo — summary & hashtag generation
 │   │   ├── services/
-│   │   │   └── automation_service.py # AutomationService — Phase 1 & 2 orchestrator
+│   │   │   ├── automation_service.py # AutomationService — Phase 1 & 2 orchestrator
+│   │   │   └── notebooklm_auth_service.py # NotebookLMAuthService — browser login & session management
 │   │   └── utils/
 │   │       ├── prompt_manager.py    # PromptManager — AI prompt factory
 │   │       └── ffmpeg_wrapper.py    # FFmpegWrapper — async video/image rendering
@@ -47,6 +48,7 @@ content_automator/
 │   ├── test_file_repo.py
 │   ├── test_gdrive_repo.py
 │   ├── test_gemini_repo.py
+│   ├── test_notebooklm_auth_service.py
 │   ├── test_notebooklm_repo.py
 │   ├── test_prompt_manager.py
 │   ├── test_ffmpeg_wrapper.py
@@ -95,7 +97,7 @@ python run.py
 ### 4. Tests
 
 ```bash
-.venv\Scripts\python.exe -m pytest          # all 64 tests
+.venv\Scripts\python.exe -m pytest          # all 85 tests
 .venv\Scripts\python.exe -m pytest -v       # verbose
 ```
 
@@ -128,6 +130,13 @@ Orchestrators dispatch jobs. Domain logic handles transformations. Repositories 
 | `GoogleDriveRepo` | `repositories.gdrive_repo` | Download sermon audio from Google Drive; resolve filenames from headers |
 | `NotebookLMRepo` | `repositories.notebooklm_repo` | Submit audio to NotebookLM; generate summaries and hashtags |
 | `GeminiRepo` | `repositories.gemini_repo` | Generate images via Imagen 3; parse structured concepts via Gemini 1.5 Pro |
+
+### Services
+
+| Class | Module | Responsibility |
+|---|---|---|
+| `AutomationService` | `services.automation_service` | Orchestrate Phase 1 (ingestion, summary, early infographics) and Phase 2 (concepts, thumbnails, videos) |
+| `NotebookLMAuthService` | `services.notebooklm_auth_service` | Verify Google session cookies, invalidate stale auth, and run Playwright browser login |
 
 ### Utilities
 
