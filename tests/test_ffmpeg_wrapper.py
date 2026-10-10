@@ -33,6 +33,13 @@ class TestFFmpegWrapper(unittest.IsolatedAsyncioTestCase):
         self.assertIn("-c:a", args)
         idx = args.index("-c:a")
         self.assertEqual(args[idx + 1], "copy")
+        self.assertIn("-vf", args)
+        vf_idx = args.index("-vf")
+        self.assertEqual(args[vf_idx + 1], "pad=ceil(iw/2)*2:ceil(ih/2)*2")
+        self.assertIn("-preset", args)
+        preset_idx = args.index("-preset")
+        self.assertEqual(args[preset_idx + 1], "veryfast")
+
 
     @patch("app.backend.utils.ffmpeg_wrapper.asyncio.create_subprocess_exec")
     async def test_create_final_video_raises_on_nonzero_returncode(
@@ -85,6 +92,9 @@ class TestFFmpegWrapper(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(args[idx + 1], "copy")
         self.assertIn("-shortest", args)
         self.assertIn("-pix_fmt", args)
+        self.assertIn("-preset", args)
+        p_idx = args.index("-preset")
+        self.assertEqual(args[p_idx + 1], "veryfast")
         self.assertIn("boxblur=20:10", str(args))
         self.assertIn("force_original_aspect_ratio=decrease", str(args))
 

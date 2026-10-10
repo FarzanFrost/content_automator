@@ -1,5 +1,5 @@
-"""Class-based Gradio UI for Content Automator."""
-
+import asyncio
+from pathlib import Path
 from typing import Any, List, Optional, Tuple
 
 import gradio as gr
@@ -80,6 +80,10 @@ class ContentAutomatorUI:
             cleaned_link, themes, n_infographics=3
         )
 
+        bg_tasks = getattr(self.service, "_background_tasks", None)
+        if bg_tasks:
+            await asyncio.gather(*list(bg_tasks), return_exceptions=True)
+
         hashtag_choices = list(new_state.selected_hashtags)
         selected_default = hashtag_choices[:2]
         new_state.selected_hashtags = selected_default
@@ -111,6 +115,11 @@ class ContentAutomatorUI:
 
         current_state.selected_hashtags = list(selected_list)
         return gr.update(value=selected_list), current_state
+
+    def on_summary_change(self, text: Optional[str] = None) -> str:
+        """Return formatted character count string for summary text."""
+        count = len(text) if text is not None else 0
+        return f"Character count: {count}"
 
     def on_save_edited_summary(
         self,
@@ -154,12 +163,28 @@ class ContentAutomatorUI:
         """Handle infographic selection from gallery and update project state."""
         current_state = state if state is not None else ProjectState()
         selected_path = self._extract_path_from_event(evt)
+        if current_state.project_dir and selected_path:
+            filename = Path(selected_path).name
+            canonical_path = Path(current_state.project_dir) / "infographics" / filename
+            if canonical_path.exists():
+                selected_path = str(canonical_path.resolve())
+            elif getattr(evt, "index", None) is not None:
+                idx = evt.index
+                if isinstance(idx, (int, float)):
+                    indexed_path = (
+                        Path(current_state.project_dir)
+                        / "infographics"
+                        / f"infographic_{int(idx) + 1}.png"
+                    )
+                    if indexed_path.exists():
+                        selected_path = str(indexed_path.resolve())
         current_state.selected_infographic_path = selected_path
         return f"Selected infographic: {selected_path}", current_state
 
     async def on_confirm_infographic(
         self,
         state: Optional[ProjectState] = None,
+        progress: gr.Progress = gr.Progress(track_tqdm=True),
     ) -> Tuple[
         List[str], Optional[str], Optional[str], Optional[str], str, ProjectState
     ]:
@@ -176,7 +201,18 @@ class ContentAutomatorUI:
                 current_state,
             )
 
-        assets = await self.service.phase_2_process(current_state)
+        def report_progress(p: float, desc: str) -> None:
+            if progress:
+                try:
+                    progress(p, desc=desc)
+                except Exception:
+                    pass
+
+        report_progress(0.05, "Starting Phase 2 processing...")
+
+        assets = await self.service.phase_2_process(
+            current_state, progress_callback=report_progress
+        )
 
         # Assets layout: [*thumbnails, final_video_path, shorts_video_path, shorts_thumb_path]
         if len(assets) >= 3:
@@ -213,6 +249,21 @@ class ContentAutomatorUI:
         """Handle final thumbnail selection and update project state."""
         current_state = state if state is not None else ProjectState()
         selected_path = self._extract_path_from_event(evt)
+        if current_state.project_dir and selected_path:
+            filename = Path(selected_path).name
+            canonical_path = Path(current_state.project_dir) / "thumbnails" / filename
+            if canonical_path.exists():
+                selected_path = str(canonical_path.resolve())
+            elif getattr(evt, "index", None) is not None:
+                idx = evt.index
+                if isinstance(idx, (int, float)):
+                    indexed_path = (
+                        Path(current_state.project_dir)
+                        / "thumbnails"
+                        / f"thumbnail_{int(idx) + 1}.png"
+                    )
+                    if indexed_path.exists():
+                        selected_path = str(indexed_path.resolve())
         current_state.selected_thumbnail_path = selected_path
         return f"Selected final thumbnail: {selected_path}", current_state
 
@@ -251,6 +302,10 @@ class ContentAutomatorUI:
                             label="Generated Summary",
                             interactive=True,
                             lines=12,
+                        )
+                        summary_char_count = gr.Markdown(
+                            "Character count: 0",
+                            elem_id="summary_char_count",
                         )
                         hashtags_checkbox = gr.CheckboxGroup(
                             label="Hashtags (Select up to 2)",
@@ -302,6 +357,12 @@ class ContentAutomatorUI:
                             session_state,
                             summary_status_markdown,
                         ],
+                    )
+
+                    summary_textbox.change(
+                        fn=self.on_summary_change,
+                        inputs=[summary_textbox],
+                        outputs=[summary_char_count],
                     )
 
                     hashtags_checkbox.change(

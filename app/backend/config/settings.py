@@ -26,7 +26,7 @@ class AppSettings(BaseSettings):
         description="Google Gemini model used for image generation",
     )
     GEMINI_CONCEPTS_MODEL: str = Field(
-        default="gemini-2.5-flash",
+        default="gemini-3.1-flash-lite",
         description="Google Gemini model used for structured concept generation",
     )
     DEFAULT_N_INFOGRAPHICS: int = Field(
