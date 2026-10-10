@@ -36,7 +36,10 @@ class GoogleDriveRepo:
         """Extract filename from Content-Disposition header with fallback."""
         if content_disposition:
             # Match filename="example.mp3" or filename=example.mp3
-            match = re.search(r'filename\*?=(?:UTF-8\'\')?["\']?([^"\';\n]+)["\']?', content_disposition)
+            match = re.search(
+                r'filename\*?=(?:UTF-8\'\')?["\']?([^"\';\n]+)["\']?',
+                content_disposition,
+            )
             if match:
                 return match.group(1).strip()
 
