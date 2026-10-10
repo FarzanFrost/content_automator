@@ -76,6 +76,7 @@ Code blocks, commit messages, PR descriptions: write normal always.
 - [x] v0.1.0: Project bootstrapping and Living Docs architecture initialized
 - [ ] v0.2.0: Core content automation pipeline and models
   - [x] Repository layer adapters implemented and tested (23 tests passing)
+  - [x] Automation service orchestration implemented and tested (50 tests passing)
 
 ## Commands
 - `python -m src.main`: local development.

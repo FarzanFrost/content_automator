@@ -19,12 +19,14 @@ Objective: Establish baseline project structure, package configuration, and init
   - [x] Implement foundational entities and settings (`ThumbnailConcept`, `ConceptList`, `ProjectState`, `AppSettings`)
   - [x] Implement class-based repository layer (`FileRepo`, `GoogleDriveRepo`, `NotebookLMRepo`, `GeminiRepo`)
   - [x] Implement utility layer (`PromptManager`, `FFmpegWrapper`)
+  - [x] Implement service orchestration layer (`AutomationService`)
   - [ ] Implement `scripts/bump_version.py`
 
 ---
 
 ## 🧊 On Hold / Backlog
-- [ ] Implementation of content pipeline components (Awaiting domain design)
+- [x] Implementation of core content pipeline orchestration (`AutomationService`)
+- [ ] UI integration with Gradio lifecycle
 
 ---
 

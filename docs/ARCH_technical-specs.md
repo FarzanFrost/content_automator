@@ -54,6 +54,12 @@
 | `NotebookLMRepo` | `app.backend.repositories.notebooklm_repo` | NotebookLM audio source ingestion, summaries, and hashtag generation |
 | `GeminiRepo` | `app.backend.repositories.gemini_repo` | Multimodal Imagen 3 image generation and Gemini 1.5 Pro structured concept parsing |
 
+### Services
+
+| Service | Module | Purpose |
+|---------|--------|---------|
+| `AutomationService` | `app.backend.services.automation_service` | Orchestrator for Phase 1 (ingestion, summary, early infographics) and Phase 2 (concepts, thumbnails, videos) |
+
 ### Utilities
 
 | Utility | Module | Purpose |
@@ -77,6 +83,9 @@
 - **Interrupted File Writes**: Write new artifacts to temporary files before atomic rename to avoid corrupted partial outputs.
 - **9:16 Short-Form Scaling**: `FFmpegWrapper` short methods use a two-layer `filter_complex` — blur-fill background scaled to 1080×1920, foreground scaled to 1080 px wide and centered — to avoid black bars on 9:16 canvases sourced from 16:9 thumbnails.
 - **Islamic Compliance in Prompts**: `PromptManager.get_thumbnail_prompt` always appends the directive `avoid generating eyes` regardless of concept content. Do not remove or make this conditional.
+- **Non-blocking Background Task GC Prevention**: In `AutomationService.phase_1_process`, spawned background `asyncio` tasks for infographic generation must be retained in an in-memory set (`_background_tasks`) until completion to prevent garbage collection before execution finishes.
+- **Phase 2 Prerequisite Validation**: `AutomationService.phase_2_process` requires `ProjectState.selected_infographic_path` to be non-empty before initiating downstream concept, thumbnail, or video rendering. Raises `ValueError` if missing.
+- **Concept & Thumbnail Concurrency**: `AutomationService.phase_2_process` dispatches $k+1$ concept generation prompts concurrently ($1$ base + $k$ themes) and flattens outputs to $3 \times (k+1)$ concepts, generating all thumbnails in parallel before video composition.
 
 ---
 
