@@ -1,0 +1,143 @@
+"""Tests for FFmpegWrapper utility class."""
+
+import unittest
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
+
+
+class TestFFmpegWrapper(unittest.IsolatedAsyncioTestCase):
+    """Tests for FFmpegWrapper async video processing methods."""
+
+    # --- create_final_video ---
+
+    @patch("app.backend.utils.ffmpeg_wrapper.asyncio.create_subprocess_exec")
+    async def test_create_final_video_runs_ffmpeg(
+        self, mock_exec: AsyncMock
+    ) -> None:
+        """Verifies ffmpeg subprocess is invoked with correct output path."""
+        mock_proc = MagicMock()
+        mock_proc.communicate = AsyncMock(return_value=(b"", b""))
+        mock_proc.returncode = 0
+        mock_exec.return_value = mock_proc
+
+        from app.backend.utils.ffmpeg_wrapper import FFmpegWrapper
+
+        wrapper = FFmpegWrapper()
+        await wrapper.create_final_video(
+            img_path="thumb.jpg",
+            audio_path="sermon.mp3",
+            out_path="output/final.mp4",
+        )
+
+        mock_exec.assert_awaited_once()
+        args = mock_exec.call_args[0]
+        self.assertIn("output/final.mp4", args)
+
+    @patch("app.backend.utils.ffmpeg_wrapper.asyncio.create_subprocess_exec")
+    async def test_create_final_video_raises_on_nonzero_returncode(
+        self, mock_exec: AsyncMock
+    ) -> None:
+        """Raises RuntimeError when ffmpeg exits with nonzero code."""
+        mock_proc = MagicMock()
+        mock_proc.communicate = AsyncMock(return_value=(b"", b"error output"))
+        mock_proc.returncode = 1
+        mock_exec.return_value = mock_proc
+
+        from app.backend.utils.ffmpeg_wrapper import FFmpegWrapper
+
+        wrapper = FFmpegWrapper()
+        with self.assertRaises(RuntimeError):
+            await wrapper.create_final_video(
+                img_path="thumb.jpg",
+                audio_path="sermon.mp3",
+                out_path="output/final.mp4",
+            )
+
+    # --- create_short_video ---
+
+    @patch("app.backend.utils.ffmpeg_wrapper.asyncio.create_subprocess_exec")
+    async def test_create_short_video_runs_ffmpeg(
+        self, mock_exec: AsyncMock
+    ) -> None:
+        """Verifies ffmpeg subprocess is invoked with correct output path."""
+        mock_proc = MagicMock()
+        mock_proc.communicate = AsyncMock(return_value=(b"", b""))
+        mock_proc.returncode = 0
+        mock_exec.return_value = mock_proc
+
+        from app.backend.utils.ffmpeg_wrapper import FFmpegWrapper
+
+        wrapper = FFmpegWrapper()
+        await wrapper.create_short_video(
+            img_path="thumb.jpg",
+            bgm_path="bgm.mp3",
+            out_path="output/short.mp4",
+        )
+
+        mock_exec.assert_awaited_once()
+        args = mock_exec.call_args[0]
+        self.assertIn("output/short.mp4", args)
+
+    @patch("app.backend.utils.ffmpeg_wrapper.asyncio.create_subprocess_exec")
+    async def test_create_short_video_raises_on_nonzero_returncode(
+        self, mock_exec: AsyncMock
+    ) -> None:
+        mock_proc = MagicMock()
+        mock_proc.communicate = AsyncMock(return_value=(b"", b"ffmpeg error"))
+        mock_proc.returncode = 2
+        mock_exec.return_value = mock_proc
+
+        from app.backend.utils.ffmpeg_wrapper import FFmpegWrapper
+
+        wrapper = FFmpegWrapper()
+        with self.assertRaises(RuntimeError):
+            await wrapper.create_short_video(
+                img_path="thumb.jpg",
+                bgm_path="bgm.mp3",
+                out_path="output/short.mp4",
+            )
+
+    # --- create_short_thumbnail ---
+
+    @patch("app.backend.utils.ffmpeg_wrapper.asyncio.create_subprocess_exec")
+    async def test_create_short_thumbnail_runs_ffmpeg(
+        self, mock_exec: AsyncMock
+    ) -> None:
+        mock_proc = MagicMock()
+        mock_proc.communicate = AsyncMock(return_value=(b"", b""))
+        mock_proc.returncode = 0
+        mock_exec.return_value = mock_proc
+
+        from app.backend.utils.ffmpeg_wrapper import FFmpegWrapper
+
+        wrapper = FFmpegWrapper()
+        await wrapper.create_short_thumbnail(
+            img_path="thumb.jpg",
+            out_path="output/short_thumb.jpg",
+        )
+
+        mock_exec.assert_awaited_once()
+        args = mock_exec.call_args[0]
+        self.assertIn("output/short_thumb.jpg", args)
+
+    @patch("app.backend.utils.ffmpeg_wrapper.asyncio.create_subprocess_exec")
+    async def test_create_short_thumbnail_raises_on_nonzero_returncode(
+        self, mock_exec: AsyncMock
+    ) -> None:
+        mock_proc = MagicMock()
+        mock_proc.communicate = AsyncMock(return_value=(b"", b"error"))
+        mock_proc.returncode = 1
+        mock_exec.return_value = mock_proc
+
+        from app.backend.utils.ffmpeg_wrapper import FFmpegWrapper
+
+        wrapper = FFmpegWrapper()
+        with self.assertRaises(RuntimeError):
+            await wrapper.create_short_thumbnail(
+                img_path="thumb.jpg",
+                out_path="output/short_thumb.jpg",
+            )
+
+
+if __name__ == "__main__":
+    unittest.main()
