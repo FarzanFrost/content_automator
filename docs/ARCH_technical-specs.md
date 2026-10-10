@@ -27,6 +27,20 @@
 |----------------|------|-------|-------|
 | `CONTENT_CACHE_DIR` | Directory Path | Local state | Cache directory for intermediate artifacts |
 | `APP_CONFIG_PATH` | File Path | Global config | Path to configuration file |
+| `GEMINI_API_KEY` | Environment Variable | Global config | Secret API authentication key for Gemini API |
+| `DEFAULT_N_INFOGRAPHICS` | Environment Variable | Global config | Default count for infographic generation (default: 3) |
+| `SHORTS_BGM_PATH` | Environment Variable | Global config | Path to background music track for shorts |
+| `BASE_OUTPUT_DIR` | Environment Variable | Global config | Root output directory path for project assets |
+| `ProjectState` | Dataclass Object | Session state | Active Gradio session state across lifecycle |
+
+### Data Models & Schemas
+
+| Model | Type | Module | Purpose |
+|-------|------|--------|---------|
+| `ThumbnailConcept` | Pydantic BaseModel | `app.backend.entities.ai_models` | Structured thumbnail generation directives from Gemini API |
+| `ConceptList` | Pydantic BaseModel | `app.backend.entities.ai_models` | Collection container for multiple `ThumbnailConcept` items |
+| `ProjectState` | Dataclass | `app.backend.entities.project` | Mutable session state container for Gradio UI lifecycle |
+| `AppSettings` | Pydantic BaseSettings | `app.backend.config.settings` | Configuration manager reading `.env` and environment variables |
 
 ---
 

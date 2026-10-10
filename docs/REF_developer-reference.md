@@ -23,7 +23,7 @@
 | Command | Purpose |
 |---------|---------|
 | `python -m src.main` | Local development |
-| `pytest` | Run tests |
+| `.venv\Scripts\python.exe -m pytest` | Run tests (.venv execution) |
 | `python -m build` | Production build |
 | `python scripts/bump_version.py` | Sync version across all files |
 
@@ -41,8 +41,8 @@
 |------|-------|-------|
 | Python Runtime | `>=3.11` | Primary runtime |
 | Virtualenv Path | `.venv` | Local project environment |
-| Test Framework | `pytest` | Test execution engine |
-| Linter & Formatter | `ruff` | Fast Python linter/formatter |
+| Test Framework | `pytest` | Run via `.venv\Scripts\python.exe -m pytest` |
+| Formatter & Sorter | `black`, `isort` | Python code formatting and import sorting |
 | Type Checker | `mypy` | Strict static type checking |
 
 ---

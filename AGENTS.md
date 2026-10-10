@@ -78,7 +78,7 @@ Code blocks, commit messages, PR descriptions: write normal always.
 
 ## Commands
 - `python -m src.main`: local development.
-- `pytest`: run tests.
+- `.venv\Scripts\python.exe -m pytest`: run tests.
 - `python -m build`: production build.
 - `python scripts/bump_version.py`: sync version across all files. Never manually edit version numbers.
 
