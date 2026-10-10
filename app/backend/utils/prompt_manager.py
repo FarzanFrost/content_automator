@@ -18,7 +18,6 @@ class PromptManager:
         return (
             "Create an infographic image for the content summarizing the content in it. "
             "Be Creative. "
-            "16:9 ratio. "
             "The title on top of the image must be 'A FRIDAY SERMON SUMMARY'.\n\n"
             f"Content:\n{summary}"
         )

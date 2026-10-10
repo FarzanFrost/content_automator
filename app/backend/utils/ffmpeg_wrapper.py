@@ -1,4 +1,4 @@
-﻿"""FFmpegWrapper: async class wrapping ffmpeg CLI for video/image processing."""
+"""FFmpegWrapper: async class wrapping ffmpeg CLI for video/image processing."""
 
 import asyncio
 from pathlib import Path
@@ -62,9 +62,7 @@ class FFmpegWrapper:
             "-tune",
             "stillimage",
             "-c:a",
-            "aac",
-            "-b:a",
-            "192k",
+            "copy",
             "-pix_fmt",
             "yuv420p",
             "-shortest",
@@ -88,12 +86,13 @@ class FFmpegWrapper:
 
         # Canvas: 1080x1920 (9:16)
         # Background: scale-to-fill and blur the source image.
-        # Foreground: scale to fit within 1080 width, centered.
+        # Foreground: scale to fit within 1080x1920 canvas, centered.
         vf_filter = (
-            "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,"
-            "crop=1080:1920,boxblur=20:20[bg];"
-            "[0:v]scale=1080:-2[fg];"
-            "[bg][fg]overlay=(W-w)/2:(H-h)/2[out]"
+            "split[v1][v2];"
+            "[v1]scale=1080:1920:force_original_aspect_ratio=increase,"
+            "crop=1080:1920,boxblur=20:10[bg];"
+            "[v2]scale=1080:1920:force_original_aspect_ratio=decrease[fg];"
+            "[bg][fg]overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2"
         )
 
         await self._run(
@@ -102,29 +101,19 @@ class FFmpegWrapper:
             "1",
             "-i",
             img_path,
-            "-stream_loop",
-            "-1",
             "-i",
             bgm_path,
-            "-filter_complex",
+            "-vf",
             vf_filter,
-            "-map",
-            "[out]",
-            "-map",
-            "1:a",
             "-c:v",
             "libx264",
             "-tune",
             "stillimage",
             "-c:a",
-            "aac",
-            "-b:a",
-            "192k",
+            "copy",
+            "-shortest",
             "-pix_fmt",
             "yuv420p",
-            "-t",
-            "60",
-            "-shortest",
             out_path,
         )
 
@@ -141,20 +130,19 @@ class FFmpegWrapper:
         Path(out_path).parent.mkdir(parents=True, exist_ok=True)
 
         vf_filter = (
-            "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,"
-            "crop=1080:1920,boxblur=20:20[bg];"
-            "[0:v]scale=1080:-2[fg];"
-            "[bg][fg]overlay=(W-w)/2:(H-h)/2[out]"
+            "split[v1][v2];"
+            "[v1]scale=1080:1920:force_original_aspect_ratio=increase,"
+            "crop=1080:1920,boxblur=20:10[bg];"
+            "[v2]scale=1080:1920:force_original_aspect_ratio=decrease[fg];"
+            "[bg][fg]overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2"
         )
 
         await self._run(
             "-y",
             "-i",
             img_path,
-            "-filter_complex",
+            "-vf",
             vf_filter,
-            "-map",
-            "[out]",
             "-frames:v",
             "1",
             out_path,
