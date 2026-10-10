@@ -40,6 +40,18 @@
 | `EXIT_USAGE` | 2 | Command line syntax / argument error |
 | `EXIT_FAILURE` | 1 | General runtime error |
 
+### Gradio UI Specifications
+
+| View / Container | Component | Spec / Constraints | Behavior / Event |
+|---|---|---|---|
+| Root Application | `gr.Blocks` | `title="Content Automator"` | Houses session `gr.State(value=ProjectState())` |
+| Primary Navigation | `gr.Tabs` | "Jummah Automation", "Settings" | Top-level workflow navigation |
+| Wizard Step 1 | `gr.Accordion` | "Step 1: Init" (open) | Drive URL input, Themes input, "Start Phase 1 Processing" primary button |
+| Wizard Step 2 | `gr.Accordion` | "Step 2: Text Review" (open) | Interactive summary textbox, max-2 hashtag checkbox group, "Save Edited Summary" button |
+| Hashtag Limiting | `gr.CheckboxGroup` | Max 2 items | Selection change handler clamps selected list to length 2 |
+| Edited Text Output | Markdown file | Name: `v2_edited.md` in `project_dir` | Atomic file write dispatched via `FileRepo.save_text_version` |
+| Settings Inspector | `gr.Tab` | "Settings" | Read-only inspector displaying `BASE_OUTPUT_DIR`, `DEFAULT_N_INFOGRAPHICS`, `SHORTS_BGM_PATH` |
+
 ---
 
 ## Edge Cases

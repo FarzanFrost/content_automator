@@ -31,6 +31,8 @@
 | `DEFAULT_N_INFOGRAPHICS` | Environment Variable | Global config | Default count for infographic generation (default: 3) |
 | `SHORTS_BGM_PATH` | Environment Variable | Global config | Path to background music track for shorts |
 | `BASE_OUTPUT_DIR` | Environment Variable | Global config | Root output directory path for project assets |
+| `SERVER_NAME` | Environment Variable | Launch config | Gradio host binding address (default: `127.0.0.1`) |
+| `SERVER_PORT` | Environment Variable | Launch config | Gradio host port number (default: `7860`) |
 | `ProjectState` | Dataclass Object | Session state | Active Gradio session state across lifecycle |
 | `SHORT_CANVAS_W` | Constant | Video output | Short-form canvas width: 1080 px |
 | `SHORT_CANVAS_H` | Constant | Video output | Short-form canvas height: 1920 px (9:16) |
@@ -44,6 +46,13 @@
 | `ConceptList` | Pydantic BaseModel | `app.backend.entities.ai_models` | Collection container for multiple `ThumbnailConcept` items |
 | `ProjectState` | Dataclass | `app.backend.entities.project` | Mutable session state container for Gradio UI lifecycle |
 | `AppSettings` | Pydantic BaseSettings | `app.backend.config.settings` | Configuration manager reading `.env` and environment variables |
+
+### Presentation & UI
+
+| Component | Module | Purpose |
+|-----------|--------|---------|
+| `ContentAutomatorUI` | `app.ui.app` | Class-based Gradio user interface encapsulating reactive layout, event listeners, and session state |
+| `main` / `run.py` | `run` | Application launch entry point configuring host/port bindings and initializing UI service |
 
 ### Repositories & Adapters
 
@@ -86,6 +95,9 @@
 - **Non-blocking Background Task GC Prevention**: In `AutomationService.phase_1_process`, spawned background `asyncio` tasks for infographic generation must be retained in an in-memory set (`_background_tasks`) until completion to prevent garbage collection before execution finishes.
 - **Phase 2 Prerequisite Validation**: `AutomationService.phase_2_process` requires `ProjectState.selected_infographic_path` to be non-empty before initiating downstream concept, thumbnail, or video rendering. Raises `ValueError` if missing.
 - **Concept & Thumbnail Concurrency**: `AutomationService.phase_2_process` dispatches $k+1$ concept generation prompts concurrently ($1$ base + $k$ themes) and flattens outputs to $3 \times (k+1)$ concepts, generating all thumbnails in parallel before video composition.
+- **Gradio State Dataclass Serialization**: In `ContentAutomatorUI.build_ui`, `gr.State` must be initialized with an instantiated dataclass (`gr.State(value=ProjectState())`) rather than the dataclass class type to satisfy Gradio's internal `dataclasses.asdict` conversion.
+- **Lazy UI Dependency Resolution**: `ContentAutomatorUI` resolves `AutomationService` and `FileRepo` via lazy property getters rather than direct instantiation in `__init__`, allowing UI construction and inspection without triggering external client authentication during testing or offline environments.
+- **Hashtag Selection Clamping**: `ContentAutomatorUI.on_hashtag_change` clamps user hashtag selections to a strict maximum of 2, updating session state and restoring UI selections immediately upon change.
 
 ---
 
