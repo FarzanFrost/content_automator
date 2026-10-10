@@ -316,9 +316,7 @@ class AutomationService:
                 out_path.write_bytes(placeholder_png)
             out_file = str(out_path.resolve())
             placeholders.append(out_file)
-            task = asyncio.create_task(
-                self._safe_generate_image(prompt, out_file)
-            )
+            task = asyncio.create_task(self._safe_generate_image(prompt, out_file))
             self._background_tasks.add(task)
             task.add_done_callback(self._background_tasks.discard)
 

@@ -139,7 +139,7 @@ Orchestrators dispatch jobs. Domain logic handles transformations. Repositories 
 | Class | Module | Responsibility |
 |---|---|---|
 | `AutomationService` | `services.automation_service` | Orchestrate Phase 1 (ingestion, summary, early infographics) and Phase 2 (concepts, thumbnails, videos) |
-| `NotebookLMAuthService` | `services.notebooklm_auth_service` | Verify Google session cookies, invalidate stale auth, and run Playwright browser login |
+| `NotebookLMAuthService` | `services.notebooklm_auth_service` | Verify Google session cookies, maintain persistent Chrome profile (`fresh=False`), and run Playwright browser login with headless auto-renewal |
 
 ### Utilities
 

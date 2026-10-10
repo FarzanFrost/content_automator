@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -44,7 +45,9 @@ class NotebookLMAuthService:
             try:
                 self._storage_path.unlink()
             except OSError as exc:
-                logger.warning("Could not delete storage file %s: %s", self._storage_path, exc)
+                logger.warning(
+                    "Could not delete storage file %s: %s", self._storage_path, exc
+                )
         lock_file = self._storage_path.parent / f".{self._storage_path.name}.lock"
         if lock_file.exists():
             try:
@@ -68,31 +71,54 @@ class NotebookLMAuthService:
         except ImportError:
             return (
                 "Playwright not installed. Run:\n"
-                "  pip install \"notebooklm-py[browser]\"\n"
+                '  pip install "notebooklm-py[browser]"\n'
                 "  playwright install chromium"
             )
         except Exception as exc:  # noqa: BLE001
             logger.exception("NotebookLM browser login failed")
             return f"❌ Login failed: {exc}"
 
+    def _get_preferred_browser(self) -> str:
+        """Return 'chrome' if system Google Chrome is available, else 'chromium'."""
+        chrome_exe = Path("C:/Program Files/Google/Chrome/Application/chrome.exe")
+        if shutil.which("chrome") or chrome_exe.exists():
+            try:
+                from notebooklm import auth
+
+                auth.ensure_browser_login_available(
+                    "chrome",
+                    emit=lambda *_: None,
+                    fail=lambda code: (_ for _ in ()).throw(
+                        RuntimeError(f"Chrome exit {code}")
+                    ),
+                )
+                return "chrome"
+            except Exception:
+                pass
+        return "chromium"
+
     def _run_browser_login(self) -> None:
         """Synchronous Playwright login — called from asyncio.to_thread."""
-        from notebooklm._app.login_browser import (
-            BrowserLoginPlan,
-            LoginPathError,
-            prepare_login_paths,
-        )
+        from notebooklm._app.login_browser import (BrowserLoginPlan,
+                                                   LoginPathError,
+                                                   prepare_login_paths)
         from notebooklm._env import get_base_url
         from notebooklm.cli.playwright_login_io import run_login
         from playwright.sync_api import Page
 
-        storage_arg = str(self._storage_path) if self._storage_path != _DEFAULT_STORAGE_PATH else None
-        outcome = prepare_login_paths(profile=None, storage=storage_arg, fresh=True)
+        storage_arg = (
+            str(self._storage_path)
+            if self._storage_path != _DEFAULT_STORAGE_PATH
+            else None
+        )
+        outcome = prepare_login_paths(profile=None, storage=storage_arg, fresh=False)
         if isinstance(outcome, LoginPathError):
             raise RuntimeError(f"Login path error: {outcome}")
 
+        browser_choice = self._get_preferred_browser()
+
         plan = BrowserLoginPlan(
-            browser="chromium",
+            browser=browser_choice,
             browser_profile=outcome.browser_profile,
             storage_path=outcome.storage_path,
             include_domains=None,

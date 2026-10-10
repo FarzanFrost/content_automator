@@ -13,7 +13,9 @@ def main() -> None:
     service = AutomationService()
     ui = ContentAutomatorUI(service=service)
     demo = ui.build_ui()
-    base_output_dir = str(Path(AppSettings.load().BASE_OUTPUT_DIR or "output").resolve())
+    base_output_dir = str(
+        Path(AppSettings.load().BASE_OUTPUT_DIR or "output").resolve()
+    )
     demo.launch(
         server_name=os.getenv("SERVER_NAME", "127.0.0.1"),
         server_port=int(os.getenv("SERVER_PORT", "7860")),

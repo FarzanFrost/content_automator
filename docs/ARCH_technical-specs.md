@@ -73,7 +73,7 @@
 | Service | Module | Purpose |
 |---------|--------|---------|
 | `AutomationService` | `app.backend.services.automation_service` | Orchestrator for modular pipeline steps (`generate_notebooklm_artifacts`, `generate_infographics`, `generate_thumbnails`, `create_final_video`, `create_short_video`, `create_short_thumbnail`) and legacy batch phases |
-| `NotebookLMAuthService` | `app.backend.services.notebooklm_auth_service` | Session verification, cache invalidation, and Playwright-driven Google login for NotebookLM |
+| `NotebookLMAuthService` | `app.backend.services.notebooklm_auth_service` | Session verification, persistent Chrome browser profile management (`fresh=False`), system Chrome detection, and Playwright-driven Google login for NotebookLM |
 
 ### Utilities
 
@@ -128,6 +128,8 @@
 - **Summary Sanitization**: `clean_summary` in `automation_service` strips markdown formatting (`#`, `*`, `---`), inline citations (`[1]`, `[1, 2]`), and collapses 3+ consecutive newlines to 2 before persisting `v1_auto.md`. Runs on raw NotebookLM output before state and file storage.
 - **Infographic 16:9 Aspect Ratio**: `PromptManager.get_infographic_prompt` includes `(16:9 ratio)` directive in the Gemini image generation prompt, ensuring generated infographics match the video frame aspect ratio.
 - **Dual Video Description Files**: `ContentAutomatorUI.on_save_edited_summary` writes `final_video_description.md` (with `#IslamicReminder`) and `short_video_description.md` (with `#IslamicShorts`), each containing audio filename, hashtags, common tag, summary, and disclaimer. Replaces legacy single `v2_edited.md` output.
+- **NotebookLM Persistent Browser Profile & System Chrome**: `NotebookLMAuthService._run_browser_login` sets `fresh=False` in `prepare_login_paths` to preserve the persistent browser profile directory (`~/.notebooklm/profiles/default/browser_profile`), eliminating repeated credential entry and 2FA prompts across logins. `_get_preferred_browser` detects and prioritizes installed Google Chrome (`C:/Program Files/Google/Chrome/Application/chrome.exe`) over bundled Chromium.
+- **NotebookLM Session Keepalive & Headless Auto-Renewal**: `NotebookLMRepo._get_client` initializes `NotebookLMClient.from_storage(keepalive=600, allow_headless=True)` and sets `NOTEBOOKLM_HEADLESS_REAUTH=1`. Periodic keepalive calls `RotateCookies` every 10 minutes to prevent token expiration during execution. If session cookies expire after inactivity, client performs silent headless re-auth in the background against the persistent browser profile without user interruption.
 
 ---
 

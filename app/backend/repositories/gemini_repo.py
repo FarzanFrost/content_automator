@@ -30,7 +30,9 @@ class GeminiRepo:
         if concepts_client is not None:
             self._concepts_client = concepts_client
         else:
-            self._concepts_client = genai.Client(api_key=settings.GEMINI_CONCEPTS_API_KEY)
+            self._concepts_client = genai.Client(
+                api_key=settings.GEMINI_CONCEPTS_API_KEY
+            )
         self._image_model = image_model or settings.GEMINI_IMAGE_MODEL
         self._concepts_model = concepts_model or settings.GEMINI_CONCEPTS_MODEL
 
