@@ -72,7 +72,7 @@
 
 | Service | Module | Purpose |
 |---------|--------|---------|
-| `AutomationService` | `app.backend.services.automation_service` | Orchestrator for Phase 1 (ingestion, summary, early infographics) and Phase 2 (concepts, thumbnails, videos) |
+| `AutomationService` | `app.backend.services.automation_service` | Orchestrator for modular pipeline steps (`generate_notebooklm_artifacts`, `generate_infographics`, `generate_thumbnails`, `create_final_video`, `create_short_video`, `create_short_thumbnail`) and legacy batch phases |
 | `NotebookLMAuthService` | `app.backend.services.notebooklm_auth_service` | Session verification, cache invalidation, and Playwright-driven Google login for NotebookLM |
 
 ### Utilities
@@ -122,6 +122,9 @@
 - **Shorts BGM Autodetection & Fancy Video Rendering**: In `AutomationService.phase_2_process`, if `shorts_bgm_dont_delete.m4a` exists in `RESOURCES_DIR` and no explicit `_bgm_path` is configured, it is selected as the BGM track and rendered via `create_short_video` directly to `shorts_video_fancy.mp4`.
 - **Fast Video Encoding Presets**: `FFmpegWrapper.create_final_video` and `create_short_video` apply `-preset veryfast` alongside `-tune stillimage` to accelerate static image video encoding without quality loss, reducing full-sermon encode durations from ~10 minutes to under ~60 seconds.
 - **Phase 2 Real-Time Progress Tracking**: `ContentAutomatorUI.on_confirm_infographic` wires `gr.Progress` into `AutomationService.phase_2_process`, providing visual feedback across concept generation, parallel thumbnail rendering, and FFmpeg video encoding.
+- **Chained Phase 1 Execution**: In `ContentAutomatorUI.build_ui`, `phase1_btn.click` triggers `on_start_notebooklm` and chains via `.then(...)` to `on_generate_infographics`. NotebookLM summary and hashtags display first, while Gemini infographic generation runs automatically without user intervention and displays loading on the gallery.
+- **Isolated Parallel Media Rendering**: `confirm_infographic_btn` disables immediately upon click (`gr.update(interactive=False)`) and attaches 3 concurrent event listeners (`on_create_final_video`, `on_create_short_video`, `on_generate_thumbnails`). Each output UI block displays its own isolated loading spinner.
+- **Selected 16:9 Thumbnail for Short Thumbnail**: `create_short_thumbnail` strictly targets `state.selected_thumbnail_path` (16:9 thumbnail selected in Step 4 and confirmed via `confirm_thumbnail_btn`), preventing aspect-ratio distortions and errors from using infographics.
 
 ---
 
