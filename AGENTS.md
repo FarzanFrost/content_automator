@@ -83,6 +83,7 @@ Code blocks, commit messages, PR descriptions: write normal always.
   - [x] Gemini Developer API integration, split clients (image vs concepts), and safe background tasks (87 tests passing)
   - [x] Decoupled Phase 1/Phase 2 UI workflow with chained infographic generation and isolated loading states (107 tests passing)
   - [x] Gallery fullscreen preview, summary sanitization, 16:9 infographic prompt, and dual video descriptions (111 tests passing)
+  - [x] Persistent Chrome session (`fresh=False`), 600s keepalive rotation, and headless background re-auth (115 tests passing)
 
 
 ## Commands

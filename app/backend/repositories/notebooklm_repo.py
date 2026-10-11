@@ -1,5 +1,6 @@
 """NotebookLM repository wrapping notebooklm-py for content intelligence."""
 
+import os
 import re
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -34,11 +35,16 @@ class NotebookLMRepo:
             yield self._client
             return
 
+        os.environ.setdefault("NOTEBOOKLM_HEADLESS_REAUTH", "1")
+
         if self._auth is not None:
-            async with NotebookLMClient(auth=self._auth) as client:
+            async with NotebookLMClient(auth=self._auth, keepalive=600) as client:
                 yield client
         else:
-            async with NotebookLMClient.from_storage() as client:
+            async with NotebookLMClient.from_storage(
+                keepalive=600,
+                allow_headless=True,
+            ) as client:
                 yield client
 
     async def generate_summary(self, audio_path: str) -> str:

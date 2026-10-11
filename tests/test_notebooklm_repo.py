@@ -99,7 +99,9 @@ class TestNotebookLMRepo(unittest.IsolatedAsyncioTestCase):
         )
 
     @patch("app.backend.repositories.notebooklm_repo.NotebookLMClient")
-    async def test_generate_summary_from_storage(self, mock_client_cls: MagicMock) -> None:
+    async def test_generate_summary_from_storage(
+        self, mock_client_cls: MagicMock
+    ) -> None:
         mock_client = MagicMock()
         mock_ctx = MagicMock()
         mock_ctx.__aenter__ = AsyncMock(return_value=mock_client)
@@ -118,7 +120,9 @@ class TestNotebookLMRepo(unittest.IsolatedAsyncioTestCase):
         summary = await repo.generate_summary("/path/to/podcast.mp3")
 
         self.assertEqual(summary, "Storage summary")
-        mock_client_cls.from_storage.assert_called_once()
+        mock_client_cls.from_storage.assert_called_once_with(
+            keepalive=600, allow_headless=True
+        )
         mock_ctx.__aenter__.assert_awaited_once()
         mock_ctx.__aexit__.assert_awaited_once()
 
@@ -141,6 +145,6 @@ class TestNotebookLMRepo(unittest.IsolatedAsyncioTestCase):
         summary = await repo.generate_summary("/path/to/podcast.mp3")
 
         self.assertEqual(summary, "Auth summary")
-        mock_client_cls.assert_called_once_with(auth="test-auth-token")
+        mock_client_cls.assert_called_once_with(auth="test-auth-token", keepalive=600)
         mock_client.__aenter__.assert_awaited_once()
         mock_client.__aexit__.assert_awaited_once()

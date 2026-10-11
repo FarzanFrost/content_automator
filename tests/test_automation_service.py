@@ -8,7 +8,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 from app.backend.entities.ai_models import ConceptList, ThumbnailConcept
 from app.backend.entities.project import ProjectState
-from app.backend.services.automation_service import AutomationService, clean_summary
+from app.backend.services.automation_service import (AutomationService,
+                                                     clean_summary)
 
 
 class TestAutomationService(unittest.IsolatedAsyncioTestCase):
@@ -555,6 +556,3 @@ class TestAutomationService(unittest.IsolatedAsyncioTestCase):
         self.file_repo.save_text_version.assert_called_once_with(
             expected_clean, "v1_auto.md", str(project_dir)
         )
-
-
-

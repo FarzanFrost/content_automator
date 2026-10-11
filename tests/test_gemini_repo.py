@@ -49,7 +49,10 @@ class TestGeminiRepo(unittest.IsolatedAsyncioTestCase):
         mock_client.aio.models.generate_content.assert_awaited_once()
         call_kwargs = mock_client.aio.models.generate_content.call_args.kwargs
         self.assertIsInstance(call_kwargs["model"], str)
-        self.assertEqual(call_kwargs["contents"], "High quality YouTube thumbnail with glowing neon text")
+        self.assertEqual(
+            call_kwargs["contents"],
+            "High quality YouTube thumbnail with glowing neon text",
+        )
 
     async def test_generate_image_empty_raises_value_error(self) -> None:
         mock_response = MagicMock()

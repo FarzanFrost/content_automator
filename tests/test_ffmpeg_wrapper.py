@@ -40,7 +40,6 @@ class TestFFmpegWrapper(unittest.IsolatedAsyncioTestCase):
         preset_idx = args.index("-preset")
         self.assertEqual(args[preset_idx + 1], "veryfast")
 
-
     @patch("app.backend.utils.ffmpeg_wrapper.asyncio.create_subprocess_exec")
     async def test_create_final_video_raises_on_nonzero_returncode(
         self, mock_exec: AsyncMock

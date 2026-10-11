@@ -300,7 +300,9 @@ def test_on_select_thumbnail() -> None:
     assert "thumbnail_3.png" in msg
 
 
-def test_on_select_infographic_resolves_temp_path_to_project_file(tmp_path: Path) -> None:
+def test_on_select_infographic_resolves_temp_path_to_project_file(
+    tmp_path: Path,
+) -> None:
     """Verify on_select_infographic maps Gradio temp cache path to canonical project path."""
     project_dir = tmp_path / "project"
     infographics_dir = project_dir / "infographics"
@@ -311,9 +313,7 @@ def test_on_select_infographic_resolves_temp_path_to_project_file(tmp_path: Path
     ui = ContentAutomatorUI()
     state = ProjectState(project_dir=str(project_dir))
     mock_event = MagicMock(spec=gr.SelectData)
-    mock_event.value = {
-        "image": {"path": "/tmp/gradio/cache/infographic_1.png"}
-    }
+    mock_event.value = {"image": {"path": "/tmp/gradio/cache/infographic_1.png"}}
     mock_event.index = 0
 
     msg, out_state = ui.on_select_infographic(mock_event, state)
@@ -333,9 +333,7 @@ def test_on_select_thumbnail_resolves_temp_path_to_project_file(tmp_path: Path) 
     ui = ContentAutomatorUI()
     state = ProjectState(project_dir=str(project_dir))
     mock_event = MagicMock(spec=gr.SelectData)
-    mock_event.value = {
-        "image": {"path": "/tmp/gradio/cache/thumbnail_2.png"}
-    }
+    mock_event.value = {"image": {"path": "/tmp/gradio/cache/thumbnail_2.png"}}
     mock_event.index = 1
 
     msg, out_state = ui.on_select_thumbnail(mock_event, state)
@@ -366,7 +364,10 @@ async def test_on_start_phase_1_awaits_background_tasks() -> None:
         selected_hashtags=[],
     )
     mock_service.phase_1_process = AsyncMock(
-        return_value=(return_state, ["/workspace/output/khutbah/infographics/infographic_1.png"])
+        return_value=(
+            return_state,
+            ["/workspace/output/khutbah/infographics/infographic_1.png"],
+        )
     )
     mock_auth = MagicMock()
     mock_auth.is_authenticated.return_value = True
@@ -406,7 +407,9 @@ def test_on_check_auth_status_not_authenticated() -> None:
 async def test_on_notebooklm_login_delegates_to_auth_service() -> None:
     """Verify on_notebooklm_login awaits auth_service.login and returns result."""
     mock_auth = MagicMock()
-    mock_auth.login = AsyncMock(return_value="Authenticated. NotebookLM login successful.")
+    mock_auth.login = AsyncMock(
+        return_value="Authenticated. NotebookLM login successful."
+    )
 
     ui = ContentAutomatorUI(auth_service=mock_auth)
     result = await ui.on_notebooklm_login()
@@ -567,5 +570,3 @@ async def test_on_confirm_thumbnail() -> None:
     assert path_err is None
     assert btn_update_err["interactive"] is True
     assert "Error" in status_err
-
-

@@ -10,13 +10,10 @@ from app.backend.repositories.file_repo import FileRepo
 from app.backend.services.automation_service import AutomationService
 from app.backend.services.notebooklm_auth_service import NotebookLMAuthService
 
-
 FINAL_VIDEO_HASHTAG = "#IslamicReminder"
 SHORT_VIDEO_HASHTAG = "#IslamicShorts"
 COMMON_HASHTAG = "#SeekLightWithZuFa"
-DISCLAIMER = (
-    "Disclaimer: AI-assisted English summary and infographics. Minor errors are possible."
-)
+DISCLAIMER = "Disclaimer: AI-assisted English summary and infographics. Minor errors are possible."
 DESCRIPTION_NEWLINES_COUNT = 7
 
 
@@ -541,14 +538,17 @@ class ContentAutomatorUI:
                             columns=3,
                         )
                         confirm_thumbnail_btn = gr.Button(
-                            "Confirm Thumbnail & Create Shorts Thumbnail", variant="primary"
+                            "Confirm Thumbnail & Create Shorts Thumbnail",
+                            variant="primary",
                         )
                         thumbnail_status_markdown = gr.Markdown()
 
                     with gr.Accordion("Step 5: Final Outputs", open=True):
                         with gr.Row():
                             with gr.Column():
-                                final_video_player = gr.Video(label="Final Video (16:9)")
+                                final_video_player = gr.Video(
+                                    label="Final Video (16:9)"
+                                )
                                 final_video_status_markdown = gr.Markdown()
                             with gr.Column():
                                 shorts_video_player = gr.Video(
